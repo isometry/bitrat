@@ -15,7 +15,7 @@ var cfgFile string
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "hashbat",
+	Use:   "bitrat",
 	Short: "A brief description of your application",
 	Long: `A longer description that spans multiple lines and likely contains
 examples and usage of using your application. For example:
@@ -47,7 +47,7 @@ func init() {
 
 	rootCmd.PersistentFlags().Bool("help", false, "help for "+rootCmd.Name())
 
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.hashbat.yaml)")
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.bitrat.yaml)")
 	viper.BindPFlag("config", rootCmd.PersistentFlags().Lookup("config"))
 
 	rootCmd.PersistentFlags().Bool("debug", false, "print diagnostics")
@@ -110,12 +110,12 @@ func initConfig() {
 			os.Exit(1)
 		}
 
-		// Search config in home directory with name ".hashbat" (without extension).
+		// Search config in home directory with name ".bitrat" (without extension).
 		viper.AddConfigPath(home)
-		viper.SetConfigName(".hashbat")
+		viper.SetConfigName(".bitrat")
 	}
 
-	viper.SetEnvPrefix("hashbat")
+	viper.SetEnvPrefix("bitrat")
 	viper.AutomaticEnv() // read in environment variables that match
 
 	// If a config file is found, read it in.

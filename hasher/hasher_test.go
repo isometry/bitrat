@@ -4,7 +4,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/isometry/hashbat/pathwalk"
+	"github.com/isometry/bitrat/pathwalk"
 )
 
 const (

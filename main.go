@@ -21,7 +21,7 @@ THE SOFTWARE.
 */
 package main
 
-import "github.com/isometry/hashbat/cmd"
+import "github.com/isometry/bitrat/cmd"
 
 func main() {
   cmd.Execute()

@@ -6,7 +6,7 @@ import (
 	"crypto/md5"
 	"crypto/sha1"
 	"crypto/sha256"
-    //"github.com/minio/sha256-simd"
+	//"github.com/minio/sha256-simd"
 	"crypto/sha512"
 	"fmt"
 	"hash"
@@ -17,7 +17,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/isometry/hashbat/pathwalk"
+	"github.com/isometry/bitrat/pathwalk"
 	"github.com/spf13/viper"
 	"golang.org/x/crypto/blake2b"
 	"golang.org/x/crypto/blake2s"

@@ -12,5 +12,5 @@ const (
 	defaultHiddenDirs  = false
 	defaultHiddenFiles = false
 	defaultSkipGit     = true
-	defaultAttrPrefix  = "hashbat"
+	defaultAttrPrefix  = "bitrat"
 )

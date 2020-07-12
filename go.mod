@@ -1,14 +1,25 @@
-module github.com/isometry/hashbat
+module github.com/isometry/bitrat
 
 go 1.13
 
 require (
-	github.com/klauspost/cpuid v1.2.1
-	github.com/minio/sha256-simd v0.1.1
+	github.com/coreos/go-etcd v2.0.0+incompatible // indirect
+	github.com/cpuguy83/go-md2man v1.0.10 // indirect
+	github.com/fsnotify/fsnotify v1.4.9 // indirect
+	github.com/klauspost/cpuid v1.3.1
 	github.com/mitchellh/go-homedir v1.1.0
+	github.com/mitchellh/mapstructure v1.3.2 // indirect
+	github.com/pelletier/go-toml v1.8.0 // indirect
 	github.com/pkg/xattr v0.4.1
-	github.com/spf13/cobra v0.0.5
-	github.com/spf13/viper v1.4.0
-	golang.org/x/crypto v0.0.0-20190701094942-4def268fd1a4
-	golang.org/x/text v0.3.0
+	github.com/spf13/afero v1.3.1 // indirect
+	github.com/spf13/cast v1.3.1 // indirect
+	github.com/spf13/cobra v1.0.0
+	github.com/spf13/jwalterweatherman v1.1.0 // indirect
+	github.com/spf13/pflag v1.0.5 // indirect
+	github.com/spf13/viper v1.7.0
+	github.com/ugorji/go/codec v0.0.0-20181204163529-d75b2dcb6bc8 // indirect
+	golang.org/x/crypto v0.0.0-20200709230013-948cd5f35899
+	golang.org/x/sys v0.0.0-20200625212154-ddb9806d33ae // indirect
+	golang.org/x/text v0.3.3
+	gopkg.in/ini.v1 v1.57.0 // indirect
 )

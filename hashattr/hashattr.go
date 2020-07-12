@@ -5,8 +5,8 @@ import (
 	"os"
 	"sync"
 
-	"github.com/isometry/hashbat/hasher"
-	"github.com/isometry/hashbat/pathwalk"
+	"github.com/isometry/bitrat/hasher"
+	"github.com/isometry/bitrat/pathwalk"
 	"github.com/pkg/xattr"
 )
 

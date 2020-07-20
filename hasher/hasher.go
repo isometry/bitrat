@@ -6,10 +6,10 @@ import (
 	"crypto/md5"
 	"crypto/sha1"
 	"crypto/sha256"
-	//"github.com/minio/sha256-simd"
 	"crypto/sha512"
 	"fmt"
 	"hash"
+	"hash/crc32"
 	"io"
 	"log"
 	"os"
@@ -17,8 +17,11 @@ import (
 	"sync"
 	"time"
 
+	"github.com/dchest/skein"
 	"github.com/isometry/bitrat/pathwalk"
+	sha256simd "github.com/minio/sha256-simd"
 	"github.com/spf13/viper"
+	"github.com/zeebo/blake3"
 	"golang.org/x/crypto/blake2b"
 	"golang.org/x/crypto/blake2s"
 	"golang.org/x/crypto/ripemd160"
@@ -56,6 +59,19 @@ func (a fileHashByPath) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 
 type algorithm interface{}
 
+type algoSize struct {
+	algo algorithm
+	size int
+}
+
+func newBlake3Hash() hash.Hash {
+	return hash.Hash(blake3.New())
+}
+
+func newBlake3DerivedKey(key []byte) (hash.Hash, error) {
+	return hash.Hash(blake3.NewDeriveKey(string(key))), nil
+}
+
 // SupportedAlgorithms maps algorithm names to implementations
 var SupportedAlgorithms = map[string]algorithm{
 	"blake2b":     blake2b.New512,
@@ -64,24 +80,29 @@ var SupportedAlgorithms = map[string]algorithm{
 	"blake2b-512": blake2b.New512,
 	"blake2s-128": blake2s.New128,
 	"blake2s-256": blake2s.New256,
+	"blake3":      newBlake3Hash,
+	"blake3-dk":   newBlake3DerivedKey,
+	"crc32":       crc32.NewIEEE,
 	"md5":         md5.New,
 	"ripemd160":   ripemd160.New,
 	"sha1":        sha1.New,
 	"sha224":      sha256.New224,
-	"sha256":      sha256.New,
+	"sha256":      sha256simd.New,
 	"sha384":      sha512.New384,
 	"sha512":      sha512.New,
 	"sha3-224":    sha3.New224,
 	"sha3-256":    sha3.New256,
 	"sha3-384":    sha3.New384,
 	"sha3-512":    sha3.New512,
+	"skein-256":   algoSize{skein.NewMAC, 256 / 8},
+	"skein-512":   algoSize{skein.NewMAC, 512 / 8},
 }
 
 // New returns an initialised instance of the appropriate hash function
 func New(algo string, key []byte) Hasher {
 	var name string
-	switch key {
-	case nil:
+	switch string(key) {
+	case "":
 		name = algo
 	default:
 		name = fmt.Sprintf("hmac-%s", algo)
@@ -89,6 +110,7 @@ func New(algo string, key []byte) Hasher {
 
 	if selectedAlgorithm, ok := SupportedAlgorithms[algo]; ok {
 		switch hashFn := selectedAlgorithm.(type) {
+		// hashes with direct HMAC support
 		case func([]byte) (hash.Hash, error):
 			h, e := hashFn(key)
 			if e != nil {
@@ -98,6 +120,7 @@ func New(algo string, key []byte) Hasher {
 				Type: name,
 				Hash: h,
 			}
+		// hashes without direct HMAC support
 		case func() hash.Hash:
 			if bytes.Equal(key, nil) {
 				return Hasher{
@@ -109,10 +132,29 @@ func New(algo string, key []byte) Hasher {
 				Type: name,
 				Hash: hmac.New(hashFn, key),
 			}
+		// support for hash.Hash32 hashes (i.e. crc32)
+		case func() hash.Hash32:
+			if bytes.Equal(key, nil) {
+				return Hasher{
+					Type: name,
+					Hash: hashFn(),
+				}
+			}
+			log.Fatalf("HMAC unsupported for %s\n", algo)
+		// hashes requiring size argument
+		case algoSize:
+			switch sHashFn := hashFn.algo.(type) {
+			case func(int, []byte) hash.Hash:
+				h := sHashFn(hashFn.size, key)
+				return Hasher{
+					Type: name,
+					Hash: h,
+				}
+			}
 		}
 	}
 
-	log.Fatal("unsupported hash algorithm")
+	log.Fatalf("unsupported hash algorithm: %v\n", name)
 	return Hasher{}
 }
 

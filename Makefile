@@ -28,6 +28,9 @@ test-sort:
 test-blake2b:
 	bash -c "diff -u <(b2sum $(TEST_FILES) | sort) <(./bitrat --hash blake2b-512 $(TEST_FILES) | sort)"
 
+test-blake3:
+	bash -c "diff -u <(b3sum $(TEST_FILES) | sort) <(./bitrat --hash blake3 $(TEST_FILES) | sort)"
+
 test-sha1:
 	bash -c "diff -u <(shasum $(TEST_FILES) | sort) <(./bitrat --hash sha1 $(TEST_FILES) | sort)"
 

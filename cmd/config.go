@@ -11,6 +11,10 @@ const (
 	defaultRecurse     = false
 	defaultHiddenDirs  = false
 	defaultHiddenFiles = false
-	defaultSkipGit     = true
+	defaultIncludeGit  = false
+	defaultAltWalker   = false
+	defaultProtobuf    = false
 	defaultAttrPrefix  = "bitrat"
+	defaultPrintFormat = "%x  %s"
+	defaultOutputFile  = "-"
 )

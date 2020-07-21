@@ -12,7 +12,7 @@ const (
 	testHash = "blake2b-512"
 )
 
-func sinkFileInfoChan(input <-chan *FileHash, wg *sync.WaitGroup) {
+func sinkFileHashChan(input <-chan *FileHash, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	for range input {
@@ -40,7 +40,7 @@ func benchmarkHasherType1(options *pathwalk.Options) {
 	}
 
 	hashSinkWaitGroup.Add(1)
-	go sinkFileInfoChan(hashChan, &hashSinkWaitGroup)
+	go sinkFileHashChan(hashChan, &hashSinkWaitGroup)
 
 	pathWalkWaitGroup.Wait()
 	close(fileChan)
@@ -70,7 +70,7 @@ func benchmarkHasherType2(options *pathwalk.Options) {
 	}
 
 	hashSinkWaitGroup.Add(1)
-	go sinkFileInfoChan(hashChan, &hashSinkWaitGroup)
+	go sinkFileHashChan(hashChan, &hashSinkWaitGroup)
 
 	pathWalkWaitGroup.Wait()
 	close(fileChan)

@@ -4,9 +4,7 @@ import (
 	"crypto/hmac"
 	"fmt"
 	"os"
-	"sync"
 
-	"github.com/isometry/bitrat/hasher"
 	"github.com/isometry/bitrat/pathwalk"
 	"github.com/spf13/viper"
 )
@@ -22,9 +20,8 @@ func pathwalkOptions() *pathwalk.Options {
 		Recurse:     viper.GetBool("recurse"),
 		HiddenDirs:  viper.GetBool("hiddenDirs"),
 		HiddenFiles: viper.GetBool("hiddenFiles"),
-		SkipGit:     viper.GetBool("skipGit"),
+		IncludeGit:  viper.GetBool("includeGit"),
 	}
-
 }
 
 func pathsToWalk(paths []string) []string {
@@ -76,13 +73,13 @@ func pathStep(rootPath string, fileChan chan<- *pathwalk.File) filepath.WalkFunc
 }
 */
 
-func hashConsumer(input <-chan *hasher.FileHash, wg *sync.WaitGroup) {
-	defer wg.Done()
+// func hashConsumer(input <-chan *hasher.FileHash, wg *sync.WaitGroup) {
+// 	defer wg.Done()
 
-	for item := range input {
-		fmt.Printf("%x  %s\n", item.Hash, item.File.Path)
-	}
-}
+// 	for item := range input {
+// 		fmt.Printf("%x  %s\n", item.Hash, item.File.Path)
+// 	}
+// }
 
 // Diff two hashes
 func hashDiff(fileHash []byte, attrHash []byte) string {

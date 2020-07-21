@@ -12,8 +12,9 @@ import (
 
 // File object returned by Walker.Walk method
 type File struct {
-	Path     string
-	Size     int64
+	Path string
+	Size int64
+	ModTime
 	ProcTime time.Duration
 	Error    error
 }
@@ -34,7 +35,7 @@ type Options struct {
 	Parallel    int
 	HiddenDirs  bool
 	HiddenFiles bool
-	SkipGit     bool
+	IncludeGit  bool
 }
 
 // New returns a new Walker
@@ -71,11 +72,17 @@ func (p *Walker) step(path string, info os.FileInfo, err error) error {
 		fmt.Fprintf(os.Stderr, "%s: %v\n", filepath.Clean(os.Args[0]), err)
 		return nil
 	case info.IsDir():
-		if path != p.Root &&
-			((!p.Options.Recurse) ||
-				(!p.Options.HiddenDirs && strings.HasPrefix(info.Name(), ".")) ||
-				(p.Options.SkipGit && info.Name() == ".git")) {
-			return filepath.SkipDir
+		if path != p.Root {
+			switch {
+			case !p.Options.Recurse:
+				return filepath.SkipDir
+			case !p.Options.IncludeGit && info.Name() == ".git":
+				return filepath.SkipDir
+			case p.Options.IncludeGit && info.Name() == ".git":
+				break
+			case !p.Options.HiddenDirs && strings.HasPrefix(info.Name(), "."):
+				return filepath.SkipDir
+			}
 		}
 		return nil
 	case !info.Mode().IsRegular():
@@ -140,7 +147,7 @@ func (p *Walker2) step(path string) {
 			switch {
 			case !p.Options.HiddenDirs && strings.HasPrefix(file.Name(), "."):
 				continue
-			case !p.Options.SkipGit && file.Name() == ".git":
+			case !p.Options.IncludeGit && file.Name() == ".git":
 				continue
 			default:
 				p.Wait.Add(1)

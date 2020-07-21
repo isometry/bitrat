@@ -1,0 +1,56 @@
+syntax = "proto3";
+package bitrat;
+
+// import "google/protobuf/any.proto";
+import "google/protobuf/duration.proto";
+// import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/isometry/bitrat/proto";
+
+message RecordSet {
+  string Algorithm = 1;
+  repeated Record Record = 2;
+  Statistics Statistics = 3;
+}
+
+message Record {
+  string Path = 1;
+  bytes Hash = 2;
+  int64 Size = 3;
+  // google.protobuf.Timestamp Time = 4;
+}
+
+message Statistics {
+  int64 NumFiles = 1;
+  int64 TotalBytes = 2;
+  google.protobuf.Duration ElapsedTime = 3;
+  google.protobuf.Duration TotalTime = 4;
+  int32 Parallel = 5;
+}
+
+// message ExtendedAttribute
+
+// message File {
+//   string Path = 1;
+//   uint64 Size = 2;
+//   google.protobuf.Duration ProcTime = 3;
+//   google.protobuf.Any error = 4;
+// }
+
+// message AttrInfo {
+//   bytes Hash = 1;
+//   google.protobuf.Timestamp Time = 2;
+// }
+
+// message FileInfo {
+//   bytes Hash = 1;
+//   google.protobuf.Timestamp Time = 2;
+// }
+
+// message FileHash {
+//   File File = 1;
+//   bytes Hash = 2;
+//   string Type = 3;
+//   AttrInfo AttrInfo = 4;
+//   FileInfo FileInfo = 5;
+// }

@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 	"sync"
-	"time"
 
 	"github.com/isometry/bitrat/hashattr"
 	"github.com/isometry/bitrat/hasher"
@@ -61,7 +60,7 @@ func attrWalk(cmd *cobra.Command, args []string) {
 	}
 
 	hashPrinterWaitGroup.Add(1)
-	go hasher.HashPrinter("%x  %s\n", time.Now(), sortChan, &hashPrinterWaitGroup)
+	go hasher.OutputTextFile(sortChan, &hashPrinterWaitGroup)
 
 	pathSortWaitGroup.Add(1)
 	if viper.GetBool("sort") {

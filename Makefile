@@ -17,7 +17,7 @@ bitrat.linux:
 bitrat.windows:
 	env GOOS=windows go build -v -ldflags="-s -w" -o $@ && upx $@
 
-test: test-call-style test-sort test-blake2b test-sha1 test-sha256
+test: test-call-style test-sort test-blake2b test-blake3 test-sha1 test-sha256
 
 test-call-style:
 	bash -c "diff -u <(./bitrat --sort *.go */*.go) <(./bitrat -rs -n '*.go')"

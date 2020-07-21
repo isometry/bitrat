@@ -56,6 +56,12 @@ func init() {
 	rootCmd.PersistentFlags().Bool("stats", false, "print statistics")
 	viper.BindPFlag("stats", rootCmd.PersistentFlags().Lookup("stats"))
 
+	rootCmd.PersistentFlags().String("print-format", defaultPrintFormat, "print format")
+	viper.BindPFlag("print-format", rootCmd.PersistentFlags().Lookup("print-format"))
+
+	rootCmd.PersistentFlags().StringP("output-file", "o", defaultOutputFile, "output file")
+	viper.BindPFlag("output-file", rootCmd.PersistentFlags().Lookup("output-file"))
+
 	attrCmd.PersistentFlags().String("attr-prefix", defaultAttrPrefix, "extended attribute prefix")
 	viper.BindPFlag("attrPrefix", attrCmd.PersistentFlags().Lookup("attr-prefix"))
 
@@ -89,8 +95,18 @@ func init() {
 	rootCmd.PersistentFlags().Bool("hidden-files", defaultHiddenFiles, "process hidden files")
 	viper.BindPFlag("hiddenFiles", rootCmd.PersistentFlags().Lookup("hidden-files"))
 
-	rootCmd.PersistentFlags().Bool("skip-git", defaultSkipGit, "skip .git directories")
-	viper.BindPFlag("skipGit", rootCmd.PersistentFlags().Lookup("skip-git"))
+	rootCmd.PersistentFlags().Bool("include-git", defaultIncludeGit, "include .git directories")
+	viper.BindPFlag("includeGit", rootCmd.PersistentFlags().Lookup("include-git"))
+
+	// TODO: alt-walker is likely broken
+	rootCmd.PersistentFlags().Bool("alt-walker", defaultAltWalker, "use alternate pathwalker")
+	viper.BindPFlag("alt-walker", rootCmd.PersistentFlags().Lookup("alt-walker"))
+
+	rootCmd.PersistentFlags().Bool("protobuf", defaultProtobuf, "output to protobuf")
+	viper.BindPFlag("protobuf", rootCmd.PersistentFlags().Lookup("protobuf"))
+
+	rootCmd.PersistentFlags().StringSliceP("exclude", "e", nil, "exclude paths by pattern")
+	viper.BindPFlag("exclude", rootCmd.PersistentFlags().Lookup("exclude"))
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.

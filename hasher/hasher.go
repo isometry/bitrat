@@ -19,6 +19,7 @@ import (
 
 	"github.com/dchest/skein"
 	"github.com/isometry/bitrat/pathwalk"
+	pb "github.com/isometry/bitrat/proto"
 	sha256simd "github.com/minio/sha256-simd"
 	"github.com/spf13/viper"
 	"github.com/zeebo/blake3"
@@ -28,6 +29,8 @@ import (
 	"golang.org/x/crypto/sha3"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/durationpb"
 )
 
 // Hasher type
@@ -40,7 +43,7 @@ type Hasher struct {
 type FileHash struct {
 	File     *pathwalk.File
 	Hash     []byte
-	AttrHash struct {
+	AttrInfo struct {
 		Hash []byte
 		Time time.Time
 	}
@@ -132,7 +135,7 @@ func New(algo string, key []byte) Hasher {
 				Type: name,
 				Hash: hmac.New(hashFn, key),
 			}
-		// support for hash.Hash32 hashes (i.e. crc32)
+		// support for hash.Hash32 hashes (i.e. CRC-32 and Adler-32)
 		case func() hash.Hash32:
 			if bytes.Equal(key, nil) {
 				return Hasher{
@@ -146,6 +149,12 @@ func New(algo string, key []byte) Hasher {
 			switch sHashFn := hashFn.algo.(type) {
 			case func(int, []byte) hash.Hash:
 				h := sHashFn(hashFn.size, key)
+				return Hasher{
+					Type: name,
+					Hash: h,
+				}
+			case func(uint64, []byte) hash.Hash:
+				h := sHashFn(uint64(hashFn.size), key)
 				return Hasher{
 					Type: name,
 					Hash: h,
@@ -211,7 +220,7 @@ func (hasher *Hasher) HashProcessor(input <-chan *pathwalk.File, output chan<- *
 	}
 }
 
-// SortByFifo takes an input channel of FileInfos and lexicographically sorts by file path
+// SortByFifo takes an input channel of FileHash and adds each item directly to the output in the order received
 func SortByFifo(input <-chan *FileHash, output chan<- *FileHash, wg *sync.WaitGroup) {
 	defer wg.Done()
 
@@ -220,7 +229,7 @@ func SortByFifo(input <-chan *FileHash, output chan<- *FileHash, wg *sync.WaitGr
 	}
 }
 
-// SortByPath takes an input channel of FileInfos and lexicographically sorts by file path
+// SortByPath takes an input channel of FileHash and lexicographically sorts by file path
 func SortByPath(input <-chan *FileHash, output chan<- *FileHash, wg *sync.WaitGroup) {
 	defer wg.Done()
 
@@ -236,7 +245,7 @@ func SortByPath(input <-chan *FileHash, output chan<- *FileHash, wg *sync.WaitGr
 	}
 }
 
-// Sprintf returns a formatted string representation of FileInfo
+// Sprintf returns a formatted string representation of FileHash
 func Sprintf(format string, item *FileHash) string {
 	switch format {
 	case "":
@@ -246,23 +255,41 @@ func Sprintf(format string, item *FileHash) string {
 	}
 }
 
-// HashPrinter goroutine
-func HashPrinter(format string, start time.Time, input <-chan *FileHash, wg *sync.WaitGroup) {
+// OutputTextFile goroutine
+func OutputTextFile(input <-chan *FileHash, wg *sync.WaitGroup) {
 	defer wg.Done()
+
+	startTime := time.Now()
+
+	printFormat := viper.GetString("print-format")
+	outputFileName := viper.GetString("output-file")
 
 	numFiles := int64(0)
 	totalSize := int64(0)
 	totalTime := time.Duration(0)
 
+	var outputFile *os.File
+	switch outputFileName {
+	case "-":
+		outputFile = os.Stdout
+	default:
+		var err error
+		outputFile, err = os.Create(outputFileName)
+		if err != nil {
+			log.Fatalf("error opening output file: %v\n", err)
+		}
+	}
+	defer outputFile.Close()
+
 	for item := range input {
 		numFiles++
 		totalSize += item.File.Size
 		totalTime += item.File.ProcTime
-		fmt.Print(Sprintf(format, item))
+		fmt.Fprintln(outputFile, Sprintf(printFormat, item))
 	}
 
 	if viper.GetBool("stats") {
-		elapsedTime := time.Since(start)
+		elapsedTime := time.Since(startTime)
 		p := message.NewPrinter(language.English)
 		p.Fprintf(os.Stderr,
 			"# hashed %v bytes from %v files in %s (%s cpu over %v routines) => %.1f MB/s\n",
@@ -275,7 +302,68 @@ func HashPrinter(format string, start time.Time, input <-chan *FileHash, wg *syn
 	}
 }
 
-// HashRouter splits an input FileInfo channel into separate outputs based upon whether the item Hash is nil
+// OutputProtobufFile goroutine
+func OutputProtobufFile(input <-chan *FileHash, wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	startTime := time.Now()
+
+	outputFileName := viper.GetString("output-file")
+
+	numFiles := int64(0)
+	totalSize := int64(0)
+	totalTime := time.Duration(0)
+
+	var outputFile *os.File
+	switch outputFileName {
+	case "-":
+		outputFile = os.Stdout
+	default:
+		var err error
+		outputFile, err = os.Create(outputFileName)
+		if err != nil {
+			log.Fatalf("error opening output file: %v\n", err)
+		}
+	}
+	defer outputFile.Close()
+
+	recordSet := &pb.RecordSet{
+		Algorithm: viper.GetString("hash"),
+	}
+
+	for item := range input {
+		numFiles++
+		totalSize += item.File.Size
+		totalTime += item.File.ProcTime
+		record := &pb.Record{
+			Path: item.File.Path,
+			Hash: item.Hash,
+			// Size: item.File.Size,
+		}
+		recordSet.Record = append(recordSet.Record, record)
+	}
+
+	if viper.GetBool("stats") {
+		elapsedTime := time.Since(startTime)
+		statistics := &pb.Statistics{
+			NumFiles:    numFiles,
+			TotalBytes:  totalSize,
+			ElapsedTime: durationpb.New(elapsedTime),
+			TotalTime:   durationpb.New(totalTime),
+			Parallel:    int32(viper.GetInt("parallel")),
+		}
+		recordSet.Statistics = statistics
+	}
+
+	out, err := proto.Marshal(recordSet)
+	if err != nil {
+		log.Fatalln("Failed to encode result set:", err)
+	}
+	// TODO: catch errors here
+	outputFile.Write(out)
+}
+
+// HashRouter splits an input FileHash channel into separate outputs based upon whether the item Hash is nil
 func HashRouter(input <-chan FileHash, hashOutput, nilOutput chan<- FileHash, wg *sync.WaitGroup) {
 	defer wg.Done()
 
@@ -289,7 +377,7 @@ func HashRouter(input <-chan FileHash, hashOutput, nilOutput chan<- FileHash, wg
 	}
 }
 
-// HashSink blackholes items from a FileInfo channel
+// HashSink blackholes items from a FileHash channel
 func HashSink(input <-chan FileHash, wg *sync.WaitGroup) {
 	defer wg.Done()
 

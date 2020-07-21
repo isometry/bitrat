@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"sync"
-	"time"
 
 	"github.com/isometry/bitrat/hasher"
 	"github.com/isometry/bitrat/pathwalk"
@@ -25,32 +24,36 @@ func init() {
 /*
  * Walk the supplied paths finding files that match the supplied criteria,
  * pass these files to a scalable number of hashProcessors, pass the results
- * to an optional sorter, and print the results.
+ * to an optional sorter, and output the results.
  *                 ┌─┐                       ┌─┐                 ┌─┐
  *                 │p│    ┌─────────────┐    │h│                 │s│
  * ┌──────────┐    │a│ ┌─>│HashProcessor│─┐  │a│                 │o│
  * │ pathWalk │─┐  │t│ │  └─────────────┘ │  │s│                 │r│
- * └──────────┘ │  │h│ │  ┌─────────────┐ │  │h│   ┌─────────┐   │t│   ┌─────────────┐
- *              ├─>│C│─┼─>│HashProcessor│─┼─>│C│──>│SortBy...│──>│C│──>│ HashPrinter │
- * ┌──────────┐ │  │h│ │  └─────────────┘ │  │h│   └─────────┘   │h│   └─────────────┘
+ * └──────────┘ │  │h│ │  ┌─────────────┐ │  │h│   ┌─────────┐   │t│   ┌───────────┐
+ *              ├─>│C│─┼─>│HashProcessor│─┼─>│C│──>│SortBy...│──>│C│──>│ Output... │
+ * ┌──────────┐ │  │h│ │  └─────────────┘ │  │h│   └─────────┘   │h│   └───────────┘
  * │ pathWalk │─┘  │a│ │  ┌─────────────┐ │  │a│                 │a│
  * └──────────┘    │n│ └─>│HashProcessor│─┘  │n│                 │n│
  *                 └─┘    └─────────────┘    └─┘                 └─┘
  */
 func hashWalk(cmd *cobra.Command, args []string) {
 	var (
-		fileWaitGroup    sync.WaitGroup
-		hashWaitGroup    sync.WaitGroup
-		sortWaitGroup    sync.WaitGroup
-		printerWaitGroup sync.WaitGroup
+		fileWaitGroup   sync.WaitGroup
+		hashWaitGroup   sync.WaitGroup
+		sortWaitGroup   sync.WaitGroup
+		outputWaitGroup sync.WaitGroup
 	)
 
 	fileChan := make(chan *pathwalk.File, viper.GetInt("readahead"))
 	hashChan := make(chan *hasher.FileHash, defaultWriteahead)
 	sortChan := make(chan *hasher.FileHash, 1024)
 
-	printerWaitGroup.Add(1)
-	go hasher.HashPrinter("%x  %s\n", time.Now(), sortChan, &printerWaitGroup)
+	outputWaitGroup.Add(1)
+	if viper.GetBool("protobuf") {
+		go hasher.OutputProtobufFile(sortChan, &outputWaitGroup)
+	} else {
+		go hasher.OutputTextFile(sortChan, &outputWaitGroup)
+	}
 
 	sortWaitGroup.Add(1)
 	if viper.GetBool("sort") {
@@ -66,9 +69,15 @@ func hashWalk(cmd *cobra.Command, args []string) {
 	}
 
 	for _, path := range pathsToWalk(args) {
-		walker := pathwalk.New(path, pathwalkOptions(), fileChan, &fileWaitGroup)
-		fileWaitGroup.Add(1)
-		go walker.Walk()
+		if viper.GetBool("alt-walker") {
+			walker := pathwalk.New2(path, pathwalkOptions(), fileChan, &fileWaitGroup)
+			fileWaitGroup.Add(1)
+			go walker.Walk()
+		} else {
+			walker := pathwalk.New(path, pathwalkOptions(), fileChan, &fileWaitGroup)
+			fileWaitGroup.Add(1)
+			go walker.Walk()
+		}
 	}
 
 	fileWaitGroup.Wait()
@@ -77,5 +86,5 @@ func hashWalk(cmd *cobra.Command, args []string) {
 	close(hashChan)
 	sortWaitGroup.Wait()
 	close(sortChan)
-	printerWaitGroup.Wait()
+	outputWaitGroup.Wait()
 }

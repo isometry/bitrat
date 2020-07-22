@@ -69,15 +69,14 @@ func hashWalk(cmd *cobra.Command, args []string) {
 	}
 
 	for _, path := range pathsToWalk(args) {
+		var walker pathwalk.PathWalker
 		if viper.GetBool("alt-walker") {
-			walker := pathwalk.New2(path, pathwalkOptions(), fileChan, &fileWaitGroup)
-			fileWaitGroup.Add(1)
-			go walker.Walk()
+			walker = pathwalk.NewAltWalker(path, pathwalkOptions(), fileChan, &fileWaitGroup)
 		} else {
-			walker := pathwalk.New(path, pathwalkOptions(), fileChan, &fileWaitGroup)
-			fileWaitGroup.Add(1)
-			go walker.Walk()
+			walker = pathwalk.NewWalker(path, pathwalkOptions(), fileChan, &fileWaitGroup)
 		}
+		fileWaitGroup.Add(1)
+		go walker.Walk()
 	}
 
 	fileWaitGroup.Wait()

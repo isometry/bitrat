@@ -70,7 +70,7 @@ func attrWalk(cmd *cobra.Command, args []string) {
 	}
 
 	for _, path := range pathsToWalk(args) {
-		walker := pathwalk.New(path, pathwalkOptions(), fileChan, &pathWalkWaitGroup)
+		walker := pathwalk.NewWalker(path, pathwalkOptions(), fileChan, &pathWalkWaitGroup)
 		pathWalkWaitGroup.Add(1)
 		go walker.Walk()
 	}

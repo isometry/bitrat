@@ -19,7 +19,7 @@ import (
 
 	"github.com/dchest/skein"
 	"github.com/isometry/bitrat/pathwalk"
-	pb "github.com/isometry/bitrat/proto"
+	"github.com/isometry/bitrat/protobuf/bitratpb"
 	sha256simd "github.com/minio/sha256-simd"
 	"github.com/spf13/viper"
 	"github.com/zeebo/blake3"
@@ -31,6 +31,7 @@ import (
 	"golang.org/x/text/message"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // Hasher type
@@ -327,25 +328,26 @@ func OutputProtobufFile(input <-chan *FileHash, wg *sync.WaitGroup) {
 	}
 	defer outputFile.Close()
 
-	recordSet := &pb.RecordSet{
-		Algorithm: viper.GetString("hash"),
+	pathHashMap := make(map[string]*bitratpb.HashData)
+	recordSet := &bitratpb.RecordSet{
+		Algorithm:   viper.GetString("hash"),
+		PathHashMap: pathHashMap,
 	}
 
 	for item := range input {
 		numFiles++
 		totalSize += item.File.Size
 		totalTime += item.File.ProcTime
-		record := &pb.Record{
-			Path: item.File.Path,
-			Hash: item.Hash,
-			// Size: item.File.Size,
+		recordSet.PathHashMap[item.File.Path] = &bitratpb.HashData{
+			Hash:    item.Hash,
+			Size:    item.File.Size,
+			ModTime: timestamppb.New(item.File.ModTime),
 		}
-		recordSet.Record = append(recordSet.Record, record)
 	}
 
 	if viper.GetBool("stats") {
 		elapsedTime := time.Since(startTime)
-		statistics := &pb.Statistics{
+		statistics := &bitratpb.Statistics{
 			NumFiles:    numFiles,
 			TotalBytes:  totalSize,
 			ElapsedTime: durationpb.New(elapsedTime),

@@ -10,11 +10,27 @@ import (
 	"time"
 )
 
+// PathWalker interface
+type PathWalker interface {
+	Walk()
+}
+
+// Options for PathWalker implementations
+type Options struct {
+	Pattern     string
+	glob        bool
+	Recurse     bool
+	Parallel    int
+	HiddenDirs  bool
+	HiddenFiles bool
+	IncludeGit  bool
+}
+
 // File object returned by Walker.Walk method
 type File struct {
-	Path string
-	Size int64
-	ModTime
+	Path     string
+	Size     int64
+	ModTime  time.Time
 	ProcTime time.Duration
 	Error    error
 }
@@ -27,19 +43,8 @@ type Walker struct {
 	Wait    *sync.WaitGroup
 }
 
-// Options for Walker.New controlling operation of the Walker
-type Options struct {
-	Pattern     string
-	glob        bool
-	Recurse     bool
-	Parallel    int
-	HiddenDirs  bool
-	HiddenFiles bool
-	IncludeGit  bool
-}
-
-// New returns a new Walker
-func New(root string, options *Options, output chan<- *File, wg *sync.WaitGroup) Walker {
+// NewWalker returns a new Walker
+func NewWalker(root string, options *Options, output chan<- *File, wg *sync.WaitGroup) PathWalker {
 	if options.Pattern != "" {
 		options.glob = true
 		if _, err := filepath.Match(options.Pattern, ""); err != nil {
@@ -48,7 +53,7 @@ func New(root string, options *Options, output chan<- *File, wg *sync.WaitGroup)
 		}
 	}
 
-	return Walker{
+	return &Walker{
 		Root:    root,
 		Options: options,
 		Output:  output,
@@ -66,43 +71,43 @@ func (p *Walker) Walk() {
 	}
 }
 
-func (p *Walker) step(path string, info os.FileInfo, err error) error {
+func (p *Walker) step(path string, file os.FileInfo, err error) error {
 	switch {
 	case err != nil:
 		fmt.Fprintf(os.Stderr, "%s: %v\n", filepath.Clean(os.Args[0]), err)
 		return nil
-	case info.IsDir():
+	case file.IsDir():
 		if path != p.Root {
 			switch {
 			case !p.Options.Recurse:
 				return filepath.SkipDir
-			case !p.Options.IncludeGit && info.Name() == ".git":
+			case !p.Options.IncludeGit && file.Name() == ".git":
 				return filepath.SkipDir
-			case p.Options.IncludeGit && info.Name() == ".git":
+			case p.Options.IncludeGit && file.Name() == ".git":
 				break
-			case !p.Options.HiddenDirs && strings.HasPrefix(info.Name(), "."):
+			case !p.Options.HiddenDirs && strings.HasPrefix(file.Name(), "."):
 				return filepath.SkipDir
 			}
 		}
 		return nil
-	case !info.Mode().IsRegular():
+	case !file.Mode().IsRegular():
 		return nil
-	case !p.Options.HiddenFiles && strings.HasPrefix(info.Name(), "."):
+	case !p.Options.HiddenFiles && strings.HasPrefix(file.Name(), "."):
 		return nil
 	case p.Options.glob:
-		if globMatch, _ := filepath.Match(p.Options.Pattern, info.Name()); !globMatch {
+		if globMatch, _ := filepath.Match(p.Options.Pattern, file.Name()); !globMatch {
 			return nil
 		}
 	}
 
-	p.Output <- &File{Path: path, Size: info.Size()}
+	p.Output <- &File{Path: path, Size: file.Size(), ModTime: file.ModTime()}
 
 	return nil
 }
 
-// Walker2 is an alternate walker that walks the path concurrently without
+// AltWalker is an alternate walker that walks the path concurrently without
 // opening too many simultaneous files
-type Walker2 struct {
+type AltWalker struct {
 	Root    string
 	Options *Options
 	Sync    chan bool
@@ -110,10 +115,18 @@ type Walker2 struct {
 	Wait    *sync.WaitGroup
 }
 
-// New2 is the constructor for the Walker2 type
-func New2(root string, options *Options, output chan<- *File, wg *sync.WaitGroup) Walker2 {
+// NewAltWalker is the constructor for the AltWalker type
+func NewAltWalker(root string, options *Options, output chan<- *File, wg *sync.WaitGroup) PathWalker {
+	if options.Pattern != "" {
+		options.glob = true
+		if _, err := filepath.Match(options.Pattern, ""); err != nil {
+			fmt.Fprintf(os.Stderr, "%s: %v\n", filepath.Clean(os.Args[0]), err)
+			os.Exit(1)
+		}
+	}
+
 	sync := make(chan bool, options.Parallel)
-	return Walker2{
+	return &AltWalker{
 		Root:    root,
 		Options: options,
 		Sync:    sync,
@@ -123,18 +136,17 @@ func New2(root string, options *Options, output chan<- *File, wg *sync.WaitGroup
 }
 
 // Walk walks the path with goroutine per directory
-func (p *Walker2) Walk() {
+func (p *AltWalker) Walk() {
 	defer p.Wait.Done()
 
 	p.Wait.Add(1)
 	go p.step(p.Root)
 }
 
-func (p *Walker2) step(path string) {
+func (p *AltWalker) step(path string) {
 	defer p.Wait.Done()
 
 	p.Sync <- true
-	//fmt.Fprintf(os.Stderr, "> Entered WalkPath('%s')\n", path)
 
 	files, err := ioutil.ReadDir(path)
 	if err != nil {
@@ -143,28 +155,35 @@ func (p *Walker2) step(path string) {
 
 	for _, file := range files {
 		switch {
-		case file.IsDir() && (path == p.Root || p.Options.Recurse):
+		case file.IsDir():
 			switch {
-			case !p.Options.HiddenDirs && strings.HasPrefix(file.Name(), "."):
+			case !p.Options.Recurse:
 				continue
 			case !p.Options.IncludeGit && file.Name() == ".git":
 				continue
-			default:
-				p.Wait.Add(1)
-				go p.step(filepath.Join(path, file.Name()))
+			case p.Options.IncludeGit && file.Name() == ".git":
+				break
+			case !p.Options.HiddenDirs && strings.HasPrefix(file.Name(), "."):
+				continue
 			}
+			p.Wait.Add(1)
+			go p.step(filepath.Join(path, file.Name()))
+			continue
 		case !file.Mode().IsRegular():
 			continue
 		case !p.Options.HiddenFiles && strings.HasPrefix(file.Name(), "."):
 			continue
-		case file.Mode().IsRegular():
-			p.Output <- &File{
-				Path: filepath.Join(path, file.Name()),
-				Size: file.Size(),
+		case p.Options.glob:
+			if globMatch, _ := filepath.Match(p.Options.Pattern, file.Name()); !globMatch {
+				continue
 			}
+		}
+		p.Output <- &File{
+			Path:    filepath.Join(path, file.Name()),
+			Size:    file.Size(),
+			ModTime: file.ModTime(),
 		}
 	}
 
-	//fmt.Fprintf(os.Stderr, "< Finished WalkPath('%s')\n", path)
 	<-p.Sync
 }

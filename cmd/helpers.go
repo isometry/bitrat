@@ -4,7 +4,9 @@ import (
 	"crypto/hmac"
 	"fmt"
 	"os"
+	"sync"
 
+	"github.com/isometry/bitrat/hasher"
 	"github.com/isometry/bitrat/pathwalk"
 	"github.com/spf13/viper"
 )
@@ -21,6 +23,7 @@ func pathwalkOptions() *pathwalk.Options {
 		HiddenDirs:  viper.GetBool("hiddenDirs"),
 		HiddenFiles: viper.GetBool("hiddenFiles"),
 		IncludeGit:  viper.GetBool("includeGit"),
+		Parallel:    viper.GetInt("parallel"),
 	}
 }
 
@@ -31,55 +34,13 @@ func pathsToWalk(paths []string) []string {
 	return paths
 }
 
-/*
-func pathWalk(root string, walkFn filepath.WalkFunc, wg *sync.WaitGroup) {
+func hashConsumer(input <-chan *hasher.FileHash, wg *sync.WaitGroup) {
 	defer wg.Done()
 
-	err := filepath.Walk(root, walkFn)
-	if err != nil {
-		panic(err)
+	for item := range input {
+		fmt.Printf("%x  %s\n", item.Hash, item.File.Path)
 	}
 }
-
-func pathStep(rootPath string, fileChan chan<- *pathwalk.File) filepath.WalkFunc {
-	return func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "ERROR %v\n", err)
-			return nil
-		}
-
-		switch {
-		case info.IsDir():
-			if path != rootPath &&
-				((!viper.GetBool("recurse")) ||
-					(viper.GetBool("hiddenDirs") && strings.HasPrefix(info.Name(), ".")) ||
-					(viper.GetBool("skipGit") && info.Name() == ".git")) {
-				return filepath.SkipDir
-			}
-			return nil
-		case !info.Mode().IsRegular(), // must be after info.IsDir() checks
-			viper.GetBool("hiddenFiles") && strings.HasPrefix(info.Name(), "."):
-			return nil
-		}
-
-		if globMatch, _ := filepath.Match(viper.GetString("name"), info.Name()); !globMatch {
-			return nil
-		}
-
-		fileChan <- &pathwalk.File{Path: path}
-
-		return nil
-	}
-}
-*/
-
-// func hashConsumer(input <-chan *hasher.FileHash, wg *sync.WaitGroup) {
-// 	defer wg.Done()
-
-// 	for item := range input {
-// 		fmt.Printf("%x  %s\n", item.Hash, item.File.Path)
-// 	}
-// }
 
 // Diff two hashes
 func hashDiff(fileHash []byte, attrHash []byte) string {

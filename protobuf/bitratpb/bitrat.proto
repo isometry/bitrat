@@ -1,15 +1,16 @@
 syntax = "proto3";
-package bitrat;
+package bitratpb;
 
 // import "google/protobuf/any.proto";
 import "google/protobuf/duration.proto";
-// import "google/protobuf/timestamp.proto";
+import "google/protobuf/timestamp.proto";
 
-option go_package = "github.com/isometry/bitrat/proto";
+option go_package = "github.com/isometry/bitrat/protobuf/bitratpb";
 
 message RecordSet {
   string Algorithm = 1;
-  repeated Record Record = 2;
+  map<string, HashData> PathHashMap = 2;
+  // repeated Record Record = 2;
   Statistics Statistics = 3;
 }
 
@@ -17,7 +18,7 @@ message Record {
   string Path = 1;
   bytes Hash = 2;
   int64 Size = 3;
-  // google.protobuf.Timestamp Time = 4;
+  google.protobuf.Timestamp Time = 4;
 }
 
 message Statistics {
@@ -28,7 +29,11 @@ message Statistics {
   int32 Parallel = 5;
 }
 
-// message ExtendedAttribute
+message HashData {
+  bytes Hash = 1;
+  int64 Size = 2;
+  google.protobuf.Timestamp ModTime = 3;
+}
 
 // message File {
 //   string Path = 1;

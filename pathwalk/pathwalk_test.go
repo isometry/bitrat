@@ -17,7 +17,7 @@ func BenchmarkPathwalker(b *testing.B) {
 		Recurse:     true,
 		HiddenDirs:  true,
 		HiddenFiles: true,
-		SkipGit:     false,
+		IncludeGit:  true,
 	}
 
 	for n := 0; n < b.N; n++ {
@@ -28,7 +28,7 @@ func BenchmarkPathwalker(b *testing.B) {
 
 		fileChan := make(chan *File, 64)
 
-		walker := New("/usr/share", &options, fileChan, &pathWalkWaitGroup)
+		walker := NewWalker("/usr/share", &options, fileChan, &pathWalkWaitGroup)
 		pathWalkWaitGroup.Add(1)
 		go walker.Walk()
 
@@ -49,7 +49,7 @@ func benchmarkPathwalker2(options *Options) {
 
 	fileChan := make(chan *File, 64)
 
-	walker := New2("/usr/share", options, fileChan, &pathWalkWaitGroup)
+	walker := NewAltWalker("/usr/share", options, fileChan, &pathWalkWaitGroup)
 	pathWalkWaitGroup.Add(1)
 	go walker.Walk()
 
@@ -67,7 +67,7 @@ func BenchmarkPathwalker2J1(b *testing.B) {
 		Parallel:    1,
 		HiddenDirs:  true,
 		HiddenFiles: true,
-		SkipGit:     false,
+		IncludeGit:  true,
 	}
 
 	for n := 0; n < b.N; n++ {
@@ -81,7 +81,7 @@ func BenchmarkPathwalker2J2(b *testing.B) {
 		Parallel:    2,
 		HiddenDirs:  true,
 		HiddenFiles: true,
-		SkipGit:     false,
+		IncludeGit:  true,
 	}
 
 	for n := 0; n < b.N; n++ {
@@ -94,7 +94,7 @@ func BenchmarkPathwalker2J3(b *testing.B) {
 		Parallel:    3,
 		HiddenDirs:  true,
 		HiddenFiles: true,
-		SkipGit:     false,
+		IncludeGit:  true,
 	}
 
 	for n := 0; n < b.N; n++ {
@@ -107,7 +107,7 @@ func BenchmarkPathwalker2J4(b *testing.B) {
 		Parallel:    4,
 		HiddenDirs:  true,
 		HiddenFiles: true,
-		SkipGit:     false,
+		IncludeGit:  true,
 	}
 
 	for n := 0; n < b.N; n++ {
@@ -121,7 +121,7 @@ func BenchmarkPathwalker2J5(b *testing.B) {
 		Parallel:    5,
 		HiddenDirs:  true,
 		HiddenFiles: true,
-		SkipGit:     false,
+		IncludeGit:  true,
 	}
 
 	for n := 0; n < b.N; n++ {
@@ -135,7 +135,7 @@ func BenchmarkPathwalker2J6(b *testing.B) {
 		Parallel:    6,
 		HiddenDirs:  true,
 		HiddenFiles: true,
-		SkipGit:     false,
+		IncludeGit:  true,
 	}
 
 	for n := 0; n < b.N; n++ {
@@ -149,7 +149,7 @@ func BenchmarkPathwalker2J7(b *testing.B) {
 		Parallel:    7,
 		HiddenDirs:  true,
 		HiddenFiles: true,
-		SkipGit:     false,
+		IncludeGit:  true,
 	}
 
 	for n := 0; n < b.N; n++ {
@@ -163,7 +163,7 @@ func BenchmarkPathwalker2J8(b *testing.B) {
 		Parallel:    8,
 		HiddenDirs:  true,
 		HiddenFiles: true,
-		SkipGit:     false,
+		IncludeGit:  true,
 	}
 
 	for n := 0; n < b.N; n++ {

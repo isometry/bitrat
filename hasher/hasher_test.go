@@ -29,7 +29,7 @@ func benchmarkHasherType1(options *pathwalk.Options) {
 	fileChan := make(chan *pathwalk.File, 1024)
 	hashChan := make(chan *FileHash, 64)
 
-	walker := pathwalk.New(testPath, options, fileChan, &pathWalkWaitGroup)
+	walker := pathwalk.NewWalker(testPath, options, fileChan, &pathWalkWaitGroup)
 	pathWalkWaitGroup.Add(1)
 	go walker.Walk()
 
@@ -59,7 +59,7 @@ func benchmarkHasherType2(options *pathwalk.Options) {
 	fileChan := make(chan *pathwalk.File, 1024)
 	hashChan := make(chan *FileHash, 64)
 
-	walker := pathwalk.New2(testPath, options, fileChan, &pathWalkWaitGroup)
+	walker := pathwalk.NewAltWalker(testPath, options, fileChan, &pathWalkWaitGroup)
 	pathWalkWaitGroup.Add(1)
 	go walker.Walk()
 

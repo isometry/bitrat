@@ -14,6 +14,9 @@ message RecordSet {
   Statistics Statistics = 3;
 }
 
+// ExtAttr record holds map of hash-name to HashData objects
+message AttrRecord { map<string, HashData> AlgoHashMap = 1; }
+
 message Record {
   string Path = 1;
   bytes Hash = 2;

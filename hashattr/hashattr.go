@@ -2,12 +2,16 @@ package hashattr
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"sync"
 
 	"github.com/isometry/bitrat/hasher"
 	"github.com/isometry/bitrat/pathwalk"
+	"github.com/isometry/bitrat/protobuf/bitratpb"
 	"github.com/pkg/xattr"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // HashAttr implements xattr specific methods
@@ -56,8 +60,22 @@ func (attr *HashAttr) Writer(input <-chan *hasher.FileHash, wg *sync.WaitGroup) 
 	defer wg.Done()
 
 	for item := range input {
-		err := attr.Set(item.File.Path, item.Hash)
+		attrOld := attr.Get(item.File.Path)
+		attrRec := &bitratpb.AttrRecord{}
+		if err := proto.Unmarshal(attrOld, attrRec); err != nil {
+			log.Fatalln("Failed to parse attribute:", err)
+		}
+		attrRec.AlgoHashMap["test"] = &bitratpb.HashData{
+			Hash:    item.Hash,
+			Size:    item.File.Size,
+			ModTime: timestamppb.New(item.File.ModTime),
+		}
+		// XXX: the following is WIP/untested; should probably be checking the marshal error!
+		attrNew, err := proto.Marshal(attrRec)
 		if err != nil {
+			fmt.Fprintln(os.Stderr, err.Error())
+		}
+		if err := attr.Set(item.File.Path, attrNew); err != nil {
 			fmt.Fprintln(os.Stderr, err.Error())
 		}
 	}

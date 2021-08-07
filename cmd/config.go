@@ -1,7 +1,7 @@
 package cmd
 
 const (
-	defaultHash        = "blake3"
+	defaultHash        = "blake2b"
 	defaultKey         = ""
 	defaultPath        = "."
 	defaultNameGlob    = "*"

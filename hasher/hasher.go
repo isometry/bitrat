@@ -84,7 +84,7 @@ var SupportedAlgorithms = map[string]algorithm{
 	"blake2b-512": blake2b.New512,
 	"blake2s-128": blake2s.New128,
 	"blake2s-256": blake2s.New256,
-	"blake3":      newBlake3Hash,
+	"blake3":      newBlake3Hash, // XXX: broken on Intel Atom C3000
 	"blake3-dk":   newBlake3DerivedKey,
 	"crc32":       crc32.NewIEEE,
 	"md5":         md5.New,

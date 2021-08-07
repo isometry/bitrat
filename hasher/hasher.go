@@ -25,7 +25,6 @@ import (
 	"github.com/zeebo/blake3"
 	"golang.org/x/crypto/blake2b"
 	"golang.org/x/crypto/blake2s"
-	"golang.org/x/crypto/ripemd160"
 	"golang.org/x/crypto/sha3"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
@@ -84,11 +83,10 @@ var SupportedAlgorithms = map[string]algorithm{
 	"blake2b-512": blake2b.New512,
 	"blake2s-128": blake2s.New128,
 	"blake2s-256": blake2s.New256,
-	"blake3":      newBlake3Hash, // XXX: broken on Intel Atom C3000
+	"blake3":      newBlake3Hash,
 	"blake3-dk":   newBlake3DerivedKey,
 	"crc32":       crc32.NewIEEE,
 	"md5":         md5.New,
-	"ripemd160":   ripemd160.New,
 	"sha1":        sha1.New,
 	"sha224":      sha256.New224,
 	"sha256":      sha256simd.New,

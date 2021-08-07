@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/klauspost/cpuid"
+	"github.com/klauspost/cpuid/v2"
 	"github.com/spf13/cobra"
 
 	homedir "github.com/mitchellh/go-homedir"

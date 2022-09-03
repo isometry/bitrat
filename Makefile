@@ -20,7 +20,7 @@ bitrat.windows:
 test: test-call-style test-sort test-blake2b test-blake3 test-sha1 test-sha256
 
 test-call-style:
-	bash -c "diff -u <(./bitrat --sort *.go */*.go) <(./bitrat -rs -n '*.go')"
+	bash -c "shopt -s globstar; diff -u <(./bitrat --sort **/*.go) <(./bitrat -rs -n '*.go')"
 
 test-sort:
 	bash -c "diff -u <(./bitrat -r -j1 -n '*.go') <(./bitrat -rs -n '*.go')"

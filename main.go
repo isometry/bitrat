@@ -24,5 +24,5 @@ package main
 import "github.com/isometry/bitrat/cmd"
 
 func main() {
-  cmd.Execute()
+	cmd.Execute()
 }

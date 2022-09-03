@@ -33,7 +33,6 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-// Hasher type
 type Hasher struct {
 	Type string
 	Hash hash.Hash

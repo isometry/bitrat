@@ -290,7 +290,8 @@ func OutputTextFile(input <-chan *FileHash, wg *sync.WaitGroup) {
 		elapsedTime := time.Since(startTime)
 		p := message.NewPrinter(language.English)
 		p.Fprintf(os.Stderr,
-			"# hashed %v bytes from %v files in %s (%s cpu over %v routines) => %.1f MB/s\n",
+			"# %s hashed %v bytes from %v files in %s (%s cpu over %v routines) => %.1f MB/s\n",
+			viper.GetString("hash"),
 			totalSize,
 			numFiles,
 			elapsedTime.Truncate(time.Millisecond).String(),

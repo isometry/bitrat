@@ -12,16 +12,8 @@ builds:
       - linux
       - windows
     goarch:
-      - "386"
       - amd64
-      - arm
       - arm64
-    ignore:
-      - goos: darwin
-        goarch: "386"
-archives:
-  - replacements:
-      386: i386
 checksum:
   name_template: "{{ .ProjectName }}_{{ .Version }}_SHA256SUMS"
   algorithm: sha256

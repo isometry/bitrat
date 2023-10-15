@@ -21,3 +21,12 @@ snapshot:
   name_template: "{{ .Tag }}-next"
 changelog:
   skip: true
+release:
+  gitea:
+    owner: isometry
+    name: bitrat
+  mode: append
+gitea_urls:
+  api: https://git.breathe.io/api/v1
+  download: https://git.breathe.io
+  skip_tls_verify: false

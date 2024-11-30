@@ -24,7 +24,7 @@ func listAlgorithms(cmd *cobra.Command, args []string) {
 	fmt.Println("Supported algorithms:")
 	supportedAlgorithms := hasher.SupportedAlgorithms
 	algoNames := make([]string, 0, len(supportedAlgorithms))
-	for name, _ := range supportedAlgorithms {
+	for name := range supportedAlgorithms {
 		algoNames = append(algoNames, name)
 	}
 	sort.Strings(algoNames)

@@ -3,18 +3,12 @@ package cmd
 import (
 	"crypto/hmac"
 	"fmt"
-	"os"
 	"sync"
 
 	"github.com/isometry/bitrat/hasher"
 	"github.com/isometry/bitrat/pathwalk"
 	"github.com/spf13/viper"
 )
-
-func er(msg interface{}) {
-	fmt.Println("Error:", msg)
-	os.Exit(1)
-}
 
 func pathwalkOptions() *pathwalk.Options {
 	return &pathwalk.Options{
@@ -51,7 +45,7 @@ func hashDiff(fileHash []byte, attrHash []byte) string {
 		return "+"
 	case hmac.Equal(fileHash, attrHash):
 		return "="
-	case attrHash != nil:
+	case len(attrHash) > 0:
 		return "~"
 	default:
 		return "?"

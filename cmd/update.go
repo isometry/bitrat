@@ -36,7 +36,7 @@ func init() {
  * └──────────┘    │n│ └─>│HashProcessor│─┘  │n│                 │n│
  *                 └─┘    └─────────────┘    └─┘                 └─┘
  */
-func updateWalk(cmd *cobra.Command, args []string) {
+func updateWalk(_ *cobra.Command, args []string) {
 	var (
 		fileWaitGroup    sync.WaitGroup
 		hashWaitGroup    sync.WaitGroup

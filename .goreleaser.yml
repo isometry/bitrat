@@ -1,11 +1,21 @@
 ---
+version: 2
 before:
   hooks:
     - go mod tidy
-    - go generate ./...
 builds:
-  - env:
+  - binary: bitrat
+    env:
       - CGO_ENABLED=0
+    mod_timestamp: "{{ .CommitTimestamp }}"
+    flags:
+      - -trimpath
+    ldflags:
+      - >-
+        -s -w
+        -X github.com/isometry/bitrat/cmd.version={{ .Version }}
+        -X github.com/isometry/bitrat/cmd.commit={{ .ShortCommit }}
+        -X github.com/isometry/bitrat/cmd.date={{ .Date }}
     goos:
       - darwin
       - freebsd
@@ -14,19 +24,31 @@ builds:
     goarch:
       - amd64
       - arm64
+archives:
+  - format: zip
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+snapshot:
+  version_template: "{{ .Tag }}-next"
 checksum:
   name_template: "{{ .ProjectName }}_{{ .Version }}_SHA256SUMS"
   algorithm: sha256
-snapshot:
-  name_template: "{{ .Tag }}-next"
-changelog:
-  skip: true
 release:
-  gitea:
-    owner: isometry
-    name: bitrat
-  mode: append
-gitea_urls:
-  api: https://git.breathe.io/api/v1
-  download: https://git.breathe.io
-  skip_tls_verify: false
+  draft: false
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+brews:
+  - repository:
+      owner: isometry
+      name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+    directory: Formula
+    description: Lightning-fast, multi-algorithm file checksums
+    homepage: https://just.breathe.io/project/bitrat/
+    test: |
+      system "#{bin}/bitrat --help"
+    install: |
+      bin.install "bitrat"

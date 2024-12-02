@@ -11,22 +11,21 @@ import (
 	"github.com/spf13/viper"
 )
 
+var (
+	version string = "snapshot"
+	commit  string = "unknown"
+	date    string = "unknown"
+)
+
 var cfgFile string
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "bitrat",
-	Short: "Find bitrot and changed files - fast",
-	// 	Long: `A longer description that spans multiple lines and likely contains
-	// examples and usage of using your application. For example:
-
-	// Cobra is a CLI library for Go that empowers applications.
-	// This application is a tool to generate the needed files
-	// to quickly create a Cobra application.`,
-	// hash by default
-	Run: hashWalk,
-	// allow arbitrary file paths to be passed as arguments
-	Args: cobra.ArbitraryArgs,
+	Use:     "bitrat",
+	Short:   "Lightning-fast, multi-algorithm file checksums",
+	Run:     hashWalk,
+	Args:    cobra.ArbitraryArgs,
+	Version: fmt.Sprintf("%s-%s (built %s)", version, commit, date),
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -40,10 +39,6 @@ func Execute() {
 
 func init() {
 	cobra.OnInitialize(initConfig)
-
-	// Here you will define your flags and configuration settings.
-	// Cobra supports persistent flags, which, if defined here,
-	// will be global for your application.
 
 	rootCmd.PersistentFlags().Bool("help", false, "help for "+rootCmd.Name())
 
@@ -61,9 +56,6 @@ func init() {
 
 	rootCmd.PersistentFlags().StringP("output-file", "o", defaultOutputFile, "output file")
 	viper.BindPFlag("output-file", rootCmd.PersistentFlags().Lookup("output-file"))
-
-	attrCmd.PersistentFlags().String("attr-prefix", defaultAttrPrefix, "extended attribute prefix")
-	viper.BindPFlag("attrPrefix", attrCmd.PersistentFlags().Lookup("attr-prefix"))
 
 	rootCmd.PersistentFlags().StringP("hash", "h", defaultHash, "hash algorithm")
 	viper.BindPFlag("hash", rootCmd.PersistentFlags().Lookup("hash"))
@@ -107,10 +99,6 @@ func init() {
 
 	rootCmd.PersistentFlags().StringSliceP("exclude", "e", nil, "exclude paths by pattern")
 	viper.BindPFlag("exclude", rootCmd.PersistentFlags().Lookup("exclude"))
-
-	// Cobra also supports local flags, which will only run
-	// when this action is called directly.
-	// rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
 // initConfig reads in config file and ENV variables if set.

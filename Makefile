@@ -35,8 +35,13 @@ test-blake2b:
 test-blake3:
 	bash -c "diff -u <(b3sum $(TEST_FILES) | sort) <(./bitrat --hash blake3 $(TEST_FILES) | sort)"
 
-test-sha256-simd:
+test-sha256-performance:
 	hyperfine --warmup 1 \
+		'find $(TEST_PATH) -type f -print0 | xargs -0 sha256sum' \
+		'find $(TEST_PATH) -type f -print0 | xargs -0 openssl sha256' \
+		'find $(TEST_PATH) -type f -print0 | xargs -0 -n4 -P8 sha256sum' \
+		'bfs $(TEST_PATH) -type f -print0 | xargs -0 -n4 -P8 openssl sha256' \
+		'bfs $(TEST_PATH) -type f -print0 | xargs -0 -n4 -P8 sha256sum' \
 		'./bitrat -r $(TEST_PATH) --hash sha256' \
 		'./bitrat -r $(TEST_PATH) --hash sha256-simd'
 
@@ -46,13 +51,13 @@ test-b3sum-performance:
 		'bfs  $(TEST_PATH) -type f -print0 | xargs -0 -P2  b3sum --num-threads=8' \
 		'bfs  $(TEST_PATH) -type f -print0 | xargs -0 -P4  b3sum --num-threads=4' \
 		'bfs  $(TEST_PATH) -type f -print0 | xargs -0 -P8  b3sum --num-threads=2' \
-		'bfs  $(TEST_PATH) -type f -print0 | xargs -0 -P16 b3sum --num-threads=1'
+		'bfs  $(TEST_PATH) -type f -print0 | xargs -0 -P16 b3sum --num-threads=1' \
 
 test-blake3-performance:
 	hyperfine --warmup 1 \
 		'bfs  $(TEST_PATH) -type f -print0 | xargs -0 -P16 b3sum --num-threads=4' \
 		'./bitrat -j9 -r $(TEST_PATH) --hash blake3' \
-		'./bitrat -j16 -r $(TEST_PATH) --hash blake3 --alt-walker'
+		'./bitrat -j16 -r $(TEST_PATH) --hash blake3'
 
 test-sha1:
 	bash -c "diff -u <(shasum $(TEST_FILES) | sort) <(./bitrat --hash sha1 $(TEST_FILES) | sort)"

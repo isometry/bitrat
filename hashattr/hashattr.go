@@ -6,12 +6,13 @@ import (
 	"os"
 	"sync"
 
-	"github.com/isometry/bitrat/hasher"
-	"github.com/isometry/bitrat/pathwalk"
-	"github.com/isometry/bitrat/protobuf/bitratpb"
 	"github.com/pkg/xattr"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
+
+	"github.com/isometry/bitrat/hasher"
+	"github.com/isometry/bitrat/pathwalk"
+	"github.com/isometry/bitrat/protobuf/bitratpb"
 )
 
 // HashAttr implements xattr specific methods

@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/spf13/viper"
+
 	"github.com/isometry/bitrat/hasher"
 	"github.com/isometry/bitrat/pathwalk"
-	"github.com/spf13/viper"
 )
 
 func pathwalkOptions() *pathwalk.Options {

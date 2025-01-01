@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/isometry/bitrat/hasher"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+
+	"github.com/isometry/bitrat/hasher"
 )
 
 // hashCmd represents the hash (and default) command

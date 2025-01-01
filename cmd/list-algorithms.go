@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/isometry/bitrat/hasher"
 	"github.com/spf13/cobra"
+
+	"github.com/isometry/bitrat/hasher"
 )
 
 // listAlgorithmsCmd represents the attr command

@@ -6,9 +6,8 @@ import (
 	"strings"
 
 	"github.com/klauspost/cpuid/v2"
-	"github.com/spf13/cobra"
-
 	homedir "github.com/mitchellh/go-homedir"
+	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 

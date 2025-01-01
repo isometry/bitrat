@@ -3,10 +3,11 @@ package cmd
 import (
 	"sync"
 
-	"github.com/isometry/bitrat/hasher"
-	"github.com/isometry/bitrat/pathwalk"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+
+	"github.com/isometry/bitrat/hasher"
+	"github.com/isometry/bitrat/pathwalk"
 )
 
 // hashCmd represents the hash (and default) command

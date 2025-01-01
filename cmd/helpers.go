@@ -14,9 +14,9 @@ func pathwalkOptions() *pathwalk.Options {
 	return &pathwalk.Options{
 		Pattern:     viper.GetString("name"),
 		Recurse:     viper.GetBool("recurse"),
-		HiddenDirs:  viper.GetBool("hiddenDirs"),
-		HiddenFiles: viper.GetBool("hiddenFiles"),
-		IncludeGit:  viper.GetBool("includeGit"),
+		HiddenDirs:  viper.GetBool("hidden-dirs"),
+		HiddenFiles: viper.GetBool("hidden-files"),
+		IncludeGit:  viper.GetBool("include-git"),
 		Parallel:    viper.GetInt("parallel"),
 	}
 }

@@ -18,8 +18,6 @@ import (
 	"time"
 
 	"github.com/dchest/skein"
-	"github.com/isometry/bitrat/pathwalk"
-	"github.com/isometry/bitrat/protobuf/bitratpb"
 	sha256simd "github.com/minio/sha256-simd"
 	"github.com/spf13/viper"
 	"github.com/zeebo/blake3"
@@ -31,6 +29,9 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
+
+	"github.com/isometry/bitrat/pathwalk"
+	"github.com/isometry/bitrat/protobuf/bitratpb"
 )
 
 type Hasher struct {

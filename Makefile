@@ -3,6 +3,10 @@ TEST_PATH	?= .
 TEST_FILES	?= *.go */*.go
 TEST_KEY	?= testhmac
 
+export BITRAT_HIDDEN_DIRS=true
+export BITRAT_HIDDEN_FILES=true
+export BITRAT_INCLUDE_GIT=true
+
 debug:
 	go build -v
 
@@ -37,9 +41,6 @@ test-blake3:
 
 test-sha256-performance:
 	hyperfine --warmup 1 \
-		'find $(TEST_PATH) -type f -print0 | xargs -0 sha256sum' \
-		'find $(TEST_PATH) -type f -print0 | xargs -0 openssl sha256' \
-		'find $(TEST_PATH) -type f -print0 | xargs -0 -n4 -P8 sha256sum' \
 		'bfs $(TEST_PATH) -type f -print0 | xargs -0 -n4 -P8 openssl sha256' \
 		'bfs $(TEST_PATH) -type f -print0 | xargs -0 -n4 -P8 sha256sum' \
 		'./bitrat -r $(TEST_PATH) --hash sha256' \
@@ -56,8 +57,7 @@ test-b3sum-performance:
 test-blake3-performance:
 	hyperfine --warmup 1 \
 		'bfs  $(TEST_PATH) -type f -print0 | xargs -0 -P16 b3sum --num-threads=4' \
-		'./bitrat -j9 -r $(TEST_PATH) --hash blake3' \
-		'./bitrat -j16 -r $(TEST_PATH) --hash blake3'
+		'./bitrat -r $(TEST_PATH) --hash blake3'
 
 test-sha1:
 	bash -c "diff -u <(shasum $(TEST_FILES) | sort) <(./bitrat --hash sha1 $(TEST_FILES) | sort)"

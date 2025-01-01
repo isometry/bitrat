@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/klauspost/cpuid/v2"
 	"github.com/spf13/cobra"
@@ -82,13 +83,13 @@ func init() {
 	viper.BindPFlag("sort", rootCmd.PersistentFlags().Lookup("sort"))
 
 	rootCmd.PersistentFlags().Bool("hidden-dirs", defaultHiddenDirs, "process hidden directories")
-	viper.BindPFlag("hiddenDirs", rootCmd.PersistentFlags().Lookup("hidden-dirs"))
+	viper.BindPFlag("hidden-dirs", rootCmd.PersistentFlags().Lookup("hidden-dirs"))
 
 	rootCmd.PersistentFlags().Bool("hidden-files", defaultHiddenFiles, "process hidden files")
-	viper.BindPFlag("hiddenFiles", rootCmd.PersistentFlags().Lookup("hidden-files"))
+	viper.BindPFlag("hidden-files", rootCmd.PersistentFlags().Lookup("hidden-files"))
 
 	rootCmd.PersistentFlags().Bool("include-git", defaultIncludeGit, "include .git directories")
-	viper.BindPFlag("includeGit", rootCmd.PersistentFlags().Lookup("include-git"))
+	viper.BindPFlag("include-git", rootCmd.PersistentFlags().Lookup("include-git"))
 
 	// TODO: alt-walker is likely broken
 	rootCmd.PersistentFlags().Bool("alt-walker", defaultAltWalker, "use alternate pathwalker")
@@ -120,6 +121,7 @@ func initConfig() {
 	}
 
 	viper.SetEnvPrefix("bitrat")
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_", "-", "_"))
 	viper.AutomaticEnv() // read in environment variables that match
 
 	// If a config file is found, read it in.

@@ -1,8 +1,8 @@
 module github.com/isometry/bitrat
 
-go 1.22.0
+go 1.23.0
 
-toolchain go1.23.3
+toolchain go1.23.4
 
 require (
 	github.com/dchest/skein v0.0.0-20171112102903-d7f1022db390

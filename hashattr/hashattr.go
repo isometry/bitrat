@@ -74,10 +74,10 @@ func (attr *HashAttr) Writer(input <-chan *hasher.FileHash, wg *sync.WaitGroup) 
 		// XXX: the following is WIP/untested; should probably be checking the marshal error!
 		attrNew, err := proto.Marshal(attrRec)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error marshalling: %w\n", err)
+			fmt.Fprintf(os.Stderr, "Error marshalling: %s\n", err.Error())
 		}
 		if err := attr.Set(item.File.Path, attrNew); err != nil {
-			fmt.Fprintf(os.Stderr, "Error setting attr: %w\n", err)
+			fmt.Fprintf(os.Stderr, "Error setting attr: %s\n", err.Error())
 		}
 	}
 }

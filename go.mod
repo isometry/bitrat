@@ -4,7 +4,7 @@ go 1.24.0
 
 require (
 	github.com/dchest/skein v0.0.0-20171112102903-d7f1022db390
-	github.com/klauspost/cpuid/v2 v2.2.9
+	github.com/klauspost/cpuid/v2 v2.2.10
 	github.com/minio/sha256-simd v1.0.1
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/pkg/xattr v0.4.10

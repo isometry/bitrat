@@ -11,15 +11,15 @@ import (
 )
 
 // hashCmd represents the hash (and default) command
-var dashCmd = &cobra.Command{
-	Use:   "stdin",
-	Short: "hash stdin",
-	Long:  ``,
-	Run:   hashDash,
-}
+func cmdDash() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "stdin",
+		Short: "hash stdin",
+		Long:  ``,
+		Run:   hashDash,
+	}
 
-func init() {
-	rootCmd.AddCommand(dashCmd)
+	return cmd
 }
 
 func hashDash(cmd *cobra.Command, args []string) {

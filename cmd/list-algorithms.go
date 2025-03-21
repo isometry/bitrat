@@ -10,15 +10,15 @@ import (
 )
 
 // listAlgorithmsCmd represents the attr command
-var listAlgorithmsCmd = &cobra.Command{
-	Use:   "list-algorithms",
-	Short: "list supported hasher algorithms",
-	Long:  ``,
-	Run:   listAlgorithms,
-}
+func cmdListAlgorithms() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "list-algorithms",
+		Short: "list supported hasher algorithms",
+		Long:  ``,
+		Run:   listAlgorithms,
+	}
 
-func init() {
-	rootCmd.AddCommand(listAlgorithmsCmd)
+	return cmd
 }
 
 func listAlgorithms(cmd *cobra.Command, args []string) {

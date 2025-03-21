@@ -19,86 +19,87 @@ var (
 
 var cfgFile string
 
-// rootCmd represents the base command when called without any subcommands
-var rootCmd = &cobra.Command{
-	Use:     "bitrat",
-	Short:   "Lightning-fast, multi-algorithm file checksums",
-	Run:     hashWalk,
-	Args:    cobra.ArbitraryArgs,
-	Version: fmt.Sprintf("%s-%s (built %s)", version, commit, date),
-}
-
-// Execute adds all child commands to the root command and sets flags appropriately.
-// This is called by main.main(). It only needs to happen once to the rootCmd.
-func Execute() {
-	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+// New returns the root command
+func New() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     "bitrat",
+		Short:   "Lightning-fast, multi-algorithm file checksums",
+		Run:     hashWalk,
+		Args:    cobra.ArbitraryArgs,
+		Version: fmt.Sprintf("%s-%s (built %s)", version, commit, date),
 	}
-}
 
-func init() {
 	cobra.OnInitialize(initConfig)
 
-	rootCmd.PersistentFlags().Bool("help", false, "help for "+rootCmd.Name())
+	pFlags := cmd.PersistentFlags()
 
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.bitrat.yaml)")
-	viper.BindPFlag("config", rootCmd.PersistentFlags().Lookup("config"))
+	pFlags.Bool("help", false, "help for "+cmd.Name())
 
-	rootCmd.PersistentFlags().Bool("debug", false, "print diagnostics")
-	viper.BindPFlag("debug", rootCmd.PersistentFlags().Lookup("debug"))
+	pFlags.StringVar(&cfgFile, "config", "", "config file (default is $HOME/.bitrat.yaml)")
+	viper.BindPFlag("config", pFlags.Lookup("config"))
 
-	rootCmd.PersistentFlags().Bool("stats", false, "print statistics")
-	viper.BindPFlag("stats", rootCmd.PersistentFlags().Lookup("stats"))
+	pFlags.Bool("debug", false, "print diagnostics")
+	viper.BindPFlag("debug", pFlags.Lookup("debug"))
 
-	rootCmd.PersistentFlags().String("print-format", defaultPrintFormat, "print format")
-	viper.BindPFlag("print-format", rootCmd.PersistentFlags().Lookup("print-format"))
+	pFlags.Bool("stats", false, "print statistics")
+	viper.BindPFlag("stats", pFlags.Lookup("stats"))
 
-	rootCmd.PersistentFlags().StringP("output-file", "o", defaultOutputFile, "output file")
-	viper.BindPFlag("output-file", rootCmd.PersistentFlags().Lookup("output-file"))
+	pFlags.String("print-format", defaultPrintFormat, "print format")
+	viper.BindPFlag("print-format", pFlags.Lookup("print-format"))
 
-	rootCmd.PersistentFlags().StringP("hash", "h", defaultHash, "hash algorithm")
-	viper.BindPFlag("hash", rootCmd.PersistentFlags().Lookup("hash"))
+	pFlags.StringP("output-file", "o", defaultOutputFile, "output file")
+	viper.BindPFlag("output-file", pFlags.Lookup("output-file"))
 
-	rootCmd.PersistentFlags().StringP("hmac", "k", defaultKey, "HMAC key")
-	viper.BindPFlag("hmac", rootCmd.PersistentFlags().Lookup("hmac"))
+	pFlags.StringP("hash", "h", defaultHash, "hash algorithm")
+	viper.BindPFlag("hash", pFlags.Lookup("hash"))
 
-	rootCmd.PersistentFlags().IntP("parallel", "j", cpuid.CPU.PhysicalCores+1, "number of parallel hashers")
-	viper.BindPFlag("parallel", rootCmd.PersistentFlags().Lookup("parallel"))
+	pFlags.StringP("hmac", "k", defaultKey, "HMAC key")
+	viper.BindPFlag("hmac", pFlags.Lookup("hmac"))
 
-	rootCmd.PersistentFlags().StringP("path", "p", defaultPath, "base path")
-	viper.BindPFlag("path", rootCmd.PersistentFlags().Lookup("path"))
+	pFlags.IntP("parallel", "j", cpuid.CPU.PhysicalCores+1, "number of parallel hashers")
+	viper.BindPFlag("parallel", pFlags.Lookup("parallel"))
 
-	rootCmd.PersistentFlags().StringP("name", "n", defaultNameGlob, "file glob pattern")
-	viper.BindPFlag("name", rootCmd.PersistentFlags().Lookup("name"))
+	pFlags.StringP("path", "p", defaultPath, "base path")
+	viper.BindPFlag("path", pFlags.Lookup("path"))
 
-	rootCmd.PersistentFlags().Int("readahead", defaultReadahead, "file walk readahead distance")
-	viper.BindPFlag("readahead", rootCmd.PersistentFlags().Lookup("readahead"))
+	pFlags.StringP("name", "n", defaultNameGlob, "file glob pattern")
+	viper.BindPFlag("name", pFlags.Lookup("name"))
 
-	rootCmd.PersistentFlags().BoolP("recursive", "r", defaultRecurse, "recurse into directories")
-	viper.BindPFlag("recurse", rootCmd.PersistentFlags().Lookup("recursive"))
+	pFlags.Int("readahead", defaultReadahead, "file walk readahead distance")
+	viper.BindPFlag("readahead", pFlags.Lookup("readahead"))
 
-	rootCmd.PersistentFlags().BoolP("sort", "s", defaultSort, "sort output by path")
-	viper.BindPFlag("sort", rootCmd.PersistentFlags().Lookup("sort"))
+	pFlags.BoolP("recursive", "r", defaultRecurse, "recurse into directories")
+	viper.BindPFlag("recurse", pFlags.Lookup("recursive"))
 
-	rootCmd.PersistentFlags().Bool("hidden-dirs", defaultHiddenDirs, "process hidden directories")
-	viper.BindPFlag("hidden-dirs", rootCmd.PersistentFlags().Lookup("hidden-dirs"))
+	pFlags.BoolP("sort", "s", defaultSort, "sort output by path")
+	viper.BindPFlag("sort", pFlags.Lookup("sort"))
 
-	rootCmd.PersistentFlags().Bool("hidden-files", defaultHiddenFiles, "process hidden files")
-	viper.BindPFlag("hidden-files", rootCmd.PersistentFlags().Lookup("hidden-files"))
+	pFlags.Bool("hidden-dirs", defaultHiddenDirs, "process hidden directories")
+	viper.BindPFlag("hidden-dirs", pFlags.Lookup("hidden-dirs"))
 
-	rootCmd.PersistentFlags().Bool("include-git", defaultIncludeGit, "include .git directories")
-	viper.BindPFlag("include-git", rootCmd.PersistentFlags().Lookup("include-git"))
+	pFlags.Bool("hidden-files", defaultHiddenFiles, "process hidden files")
+	viper.BindPFlag("hidden-files", pFlags.Lookup("hidden-files"))
+
+	pFlags.Bool("include-git", defaultIncludeGit, "include .git directories")
+	viper.BindPFlag("include-git", pFlags.Lookup("include-git"))
 
 	// TODO: alt-walker is likely broken
-	rootCmd.PersistentFlags().Bool("alt-walker", defaultAltWalker, "use alternate pathwalker")
-	viper.BindPFlag("alt-walker", rootCmd.PersistentFlags().Lookup("alt-walker"))
+	pFlags.Bool("alt-walker", defaultAltWalker, "use alternate pathwalker")
+	viper.BindPFlag("alt-walker", pFlags.Lookup("alt-walker"))
 
-	rootCmd.PersistentFlags().Bool("protobuf", defaultProtobuf, "output to protobuf")
-	viper.BindPFlag("protobuf", rootCmd.PersistentFlags().Lookup("protobuf"))
+	pFlags.Bool("protobuf", defaultProtobuf, "output to protobuf")
+	viper.BindPFlag("protobuf", pFlags.Lookup("protobuf"))
 
-	rootCmd.PersistentFlags().StringSliceP("exclude", "e", nil, "exclude paths by pattern")
-	viper.BindPFlag("exclude", rootCmd.PersistentFlags().Lookup("exclude"))
+	pFlags.StringSliceP("exclude", "e", nil, "exclude paths by pattern")
+	viper.BindPFlag("exclude", pFlags.Lookup("exclude"))
+
+	cmd.AddCommand(
+		cmdDash(),
+		cmdHash(),
+		cmdListAlgorithms(),
+	)
+
+	return cmd
 }
 
 // initConfig reads in config file and ENV variables if set.

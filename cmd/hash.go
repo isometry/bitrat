@@ -11,15 +11,15 @@ import (
 )
 
 // hashCmd represents the hash (and default) command
-var hashCmd = &cobra.Command{
-	Use:   "hash",
-	Short: "generate file hashes fast",
-	Long:  ``,
-	Run:   hashWalk,
-}
+func cmdHash() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "hash",
+		Short: "generate file hashes fast",
+		Long:  ``,
+		Run:   hashWalk,
+	}
 
-func init() {
-	rootCmd.AddCommand(hashCmd)
+	return cmd
 }
 
 /*

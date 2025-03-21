@@ -22,6 +22,9 @@ THE SOFTWARE.
 package main
 
 import (
+	"context"
+	"os"
+
 	"github.com/isometry/bitrat/cmd"
 )
 
@@ -35,5 +38,9 @@ func main() {
 	// 	log.Fatal("could not start CPU profile: ", err)
 	// }
 	// defer pprof.StopCPUProfile()
-	cmd.Execute()
+
+	ctx := context.Background()
+	if err := cmd.New().ExecuteContext(ctx); err != nil {
+		os.Exit(1)
+	}
 }

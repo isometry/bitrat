@@ -1,7 +1,6 @@
 module github.com/isometry/bitrat
 
 go 1.24.0
-
 require (
 	github.com/dchest/skein v0.0.0-20171112102903-d7f1022db390
 	github.com/klauspost/cpuid/v2 v2.2.10
@@ -9,7 +8,7 @@ require (
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/pkg/xattr v0.4.10
 	github.com/spf13/cobra v1.9.1
-	github.com/spf13/viper v1.20.0
+	github.com/spf13/viper v1.20.1
 	github.com/zeebo/blake3 v0.2.4
 	golang.org/x/crypto v0.36.0
 	golang.org/x/text v0.23.0

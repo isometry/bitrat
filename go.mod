@@ -11,8 +11,8 @@ require (
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/viper v1.20.1
 	github.com/zeebo/blake3 v0.2.4
-	golang.org/x/crypto v0.38.0
-	golang.org/x/text v0.25.0
+	golang.org/x/crypto v0.39.0
+	golang.org/x/text v0.26.0
 	google.golang.org/protobuf v1.36.6
 )
 

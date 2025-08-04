@@ -7,7 +7,7 @@ require (
 	github.com/klauspost/cpuid/v2 v2.3.0
 	github.com/minio/sha256-simd v1.0.1
 	github.com/mitchellh/go-homedir v1.1.0
-	github.com/pkg/xattr v0.4.11
+	github.com/pkg/xattr v0.4.12
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/viper v1.20.1
 	github.com/zeebo/blake3 v0.2.4

@@ -12,7 +12,7 @@ require (
 	github.com/spf13/viper v1.20.1
 	github.com/zeebo/blake3 v0.2.4
 	golang.org/x/crypto v0.40.0
-	golang.org/x/text v0.27.0
+	golang.org/x/text v0.28.0
 	google.golang.org/protobuf v1.36.6
 )
 

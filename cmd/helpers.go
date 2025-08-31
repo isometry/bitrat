@@ -11,7 +11,7 @@ import (
 	"github.com/isometry/bitrat/pathwalk"
 )
 
-func pathwalkOptions() *pathwalk.Options {
+func PathwalkOptions() *pathwalk.Options {
 	return &pathwalk.Options{
 		Pattern:     viper.GetString("name"),
 		Recurse:     viper.GetBool("recurse"),
@@ -22,14 +22,14 @@ func pathwalkOptions() *pathwalk.Options {
 	}
 }
 
-func pathsToWalk(paths []string) []string {
+func PathsToWalk(paths []string) []string {
 	if len(paths) == 0 {
 		paths = append(paths, viper.GetString("path"))
 	}
 	return paths
 }
 
-func hashConsumer(input <-chan *hasher.FileHash, wg *sync.WaitGroup) {
+func HashConsumer(input <-chan *hasher.FileHash, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	for item := range input {
@@ -38,7 +38,7 @@ func hashConsumer(input <-chan *hasher.FileHash, wg *sync.WaitGroup) {
 }
 
 // Diff two hashes
-func hashDiff(fileHash []byte, attrHash []byte) string {
+func HashDiff(fileHash []byte, attrHash []byte) string {
 	switch {
 	case fileHash == nil:
 		return "!"

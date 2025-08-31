@@ -2,7 +2,6 @@ package pathwalk
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -148,7 +147,7 @@ func (p *AltWalker) step(path string) {
 
 	p.Sync <- true
 
-	files, err := ioutil.ReadDir(path)
+	files, err := os.ReadDir(path)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "# ERROR: %s: %v\n", path, err)
 	}
@@ -169,7 +168,7 @@ func (p *AltWalker) step(path string) {
 			p.Wait.Add(1)
 			go p.step(filepath.Join(path, file.Name()))
 			continue
-		case !file.Mode().IsRegular():
+		case !file.Type().IsRegular():
 			continue
 		case !p.Options.HiddenFiles && strings.HasPrefix(file.Name(), "."):
 			continue
@@ -178,10 +177,17 @@ func (p *AltWalker) step(path string) {
 				continue
 			}
 		}
+
+		info, err := file.Info()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "# ERROR: %s: %v\n", filepath.Join(path, file.Name()), err)
+			continue
+		}
+
 		p.Output <- &File{
 			Path:    filepath.Join(path, file.Name()),
-			Size:    file.Size(),
-			ModTime: file.ModTime(),
+			Size:    info.Size(),
+			ModTime: info.ModTime(),
 		}
 	}
 

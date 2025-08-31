@@ -49,32 +49,29 @@ func hashWalk(cmd *cobra.Command, args []string) {
 	hashChan := make(chan *hasher.FileHash, defaultWriteahead)
 	sortChan := make(chan *hasher.FileHash, 1024)
 
-	outputWaitGroup.Add(1)
 	if viper.GetBool("protobuf") {
-		go hasher.OutputProtobufFile(sortChan, &outputWaitGroup)
+		outputWaitGroup.Go(hasher.OutputProtobufFile(sortChan))
 	} else {
-		go hasher.OutputTextFile(sortChan, &outputWaitGroup)
+		outputWaitGroup.Go(hasher.OutputTextFile(sortChan))
 	}
 
-	sortWaitGroup.Add(1)
 	if viper.GetBool("sort") {
-		go hasher.SortByPath(hashChan, sortChan, &sortWaitGroup)
+		sortWaitGroup.Go(hasher.SortByPath(hashChan, sortChan))
 	} else {
-		go hasher.SortByFifo(hashChan, sortChan, &sortWaitGroup)
+		sortWaitGroup.Go(hasher.SortByFifo(hashChan, sortChan))
 	}
 
 	for i := 0; i < viper.GetInt("parallel"); i++ {
-		hashWaitGroup.Add(1)
 		h := hasher.New(viper.GetString("hash"), []byte(viper.GetString("hmac")))
-		go h.HashProcessor(fileChan, hashChan, &hashWaitGroup)
+		hashWaitGroup.Go(h.HashProcessor(fileChan, hashChan))
 	}
 
-	for _, path := range pathsToWalk(args) {
+	for _, path := range PathsToWalk(args) {
 		var walker pathwalk.PathWalker
 		if viper.GetBool("alt-walker") {
-			walker = pathwalk.NewAltWalker(path, pathwalkOptions(), fileChan, &fileWaitGroup)
+			walker = pathwalk.NewAltWalker(path, PathwalkOptions(), fileChan, &fileWaitGroup)
 		} else {
-			walker = pathwalk.NewWalker(path, pathwalkOptions(), fileChan, &fileWaitGroup)
+			walker = pathwalk.NewWalker(path, PathwalkOptions(), fileChan, &fileWaitGroup)
 		}
 		fileWaitGroup.Add(1)
 		go walker.Walk()

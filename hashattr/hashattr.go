@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"sync"
 
 	"github.com/pkg/xattr"
 	"google.golang.org/protobuf/proto"
@@ -47,49 +46,49 @@ func (attr *HashAttr) Remove(path string) error {
 }
 
 // Reader goroutine
-func (attr *HashAttr) Reader(input <-chan *pathwalk.File, output chan<- *hasher.FileHash, wg *sync.WaitGroup) {
-	defer wg.Done()
-
-	for item := range input {
-		hash := attr.Get(item.Path)
-		output <- &hasher.FileHash{File: item, Hash: hash}
+func (attr *HashAttr) Reader(input <-chan *pathwalk.File, output chan<- *hasher.FileHash) func() {
+	return func() {
+		for item := range input {
+			hash := attr.Get(item.Path)
+			output <- &hasher.FileHash{File: item, Hash: hash}
+		}
 	}
 }
 
 // Writer goroutine
-func (attr *HashAttr) Writer(input <-chan *hasher.FileHash, wg *sync.WaitGroup) {
-	defer wg.Done()
-
-	for item := range input {
-		attrOld := attr.Get(item.File.Path)
-		attrRec := &bitratpb.AttrRecord{}
-		if err := proto.Unmarshal(attrOld, attrRec); err != nil {
-			log.Fatalln("Failed to parse attribute:", err)
-		}
-		attrRec.AlgoHashMap["test"] = &bitratpb.HashData{
-			Hash:    item.Hash,
-			Size:    item.File.Size,
-			ModTime: timestamppb.New(item.File.ModTime),
-		}
-		// XXX: the following is WIP/untested; should probably be checking the marshal error!
-		attrNew, err := proto.Marshal(attrRec)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error marshalling: %s\n", err.Error())
-		}
-		if err := attr.Set(item.File.Path, attrNew); err != nil {
-			fmt.Fprintf(os.Stderr, "Error setting attr: %s\n", err.Error())
+func (attr *HashAttr) Writer(input <-chan *hasher.FileHash) func() {
+	return func() {
+		for item := range input {
+			attrOld := attr.Get(item.File.Path)
+			attrRec := &bitratpb.AttrRecord{}
+			if err := proto.Unmarshal(attrOld, attrRec); err != nil {
+				log.Fatalln("Failed to parse attribute:", err)
+			}
+			attrRec.AlgoHashMap["test"] = &bitratpb.HashData{
+				Hash:    item.Hash,
+				Size:    item.File.Size,
+				ModTime: timestamppb.New(item.File.ModTime),
+			}
+			// XXX: the following is WIP/untested; should probably be checking the marshal error!
+			attrNew, err := proto.Marshal(attrRec)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error marshalling: %s\n", err.Error())
+			}
+			if err := attr.Set(item.File.Path, attrNew); err != nil {
+				fmt.Fprintf(os.Stderr, "Error setting attr: %s\n", err.Error())
+			}
 		}
 	}
 }
 
 // Remover goroutine
-func (attr *HashAttr) Remover(input <-chan *pathwalk.File, wg *sync.WaitGroup) {
-	defer wg.Done()
-
-	for item := range input {
-		err := attr.Remove(item.Path)
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err.Error())
+func (attr *HashAttr) Remover(input <-chan *pathwalk.File) func() {
+	return func() {
+		for item := range input {
+			err := attr.Remove(item.Path)
+			if err != nil {
+				fmt.Fprintln(os.Stderr, err.Error())
+			}
 		}
 	}
 }

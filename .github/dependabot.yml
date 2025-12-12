@@ -1,11 +1,21 @@
 ---
 version: 2
 updates:
-  - package-ecosystem: "github-actions"
-    directory: "/"
+  - package-ecosystem: github-actions
+    directory: /
     schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
-    directory: "/"
+      interval: weekly
+    groups:
+      actions:
+        patterns:
+          - "*"
+
+  - package-ecosystem: gomod
+    directory: /
     schedule:
-      interval: "weekly"
+      interval: weekly
+    groups:
+      golang:
+        patterns:
+          - "golang.org/*"
+    open-pull-requests-limit: 0

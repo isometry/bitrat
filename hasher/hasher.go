@@ -14,7 +14,8 @@ import (
 	"io"
 	"log"
 	"os"
-	"sort"
+	"slices"
+	"strings"
 	"time"
 
 	"github.com/dchest/skein"
@@ -52,12 +53,6 @@ type FileHash struct {
 	}
 	Type string
 }
-
-type fileHashByPath []*FileHash
-
-func (a fileHashByPath) Len() int           { return len(a) }
-func (a fileHashByPath) Less(i, j int) bool { return a[i].File.Path < a[j].File.Path }
-func (a fileHashByPath) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 
 type algorithm any
 
@@ -236,7 +231,9 @@ func SortByPath(input <-chan *FileHash, output chan<- *FileHash) func() {
 		for item := range input {
 			hashes = append(hashes, item)
 		}
-		sort.Stable(fileHashByPath(hashes))
+		slices.SortStableFunc(hashes, func(a, b *FileHash) int {
+			return strings.Compare(a.File.Path, b.File.Path)
+		})
 
 		for _, item := range hashes {
 			output <- item

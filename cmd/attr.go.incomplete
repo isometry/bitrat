@@ -28,46 +28,46 @@ func init() {
 
 func attrWalk(cmd *cobra.Command, args []string) {
 	var (
-		pathWalkWaitGroup    sync.WaitGroup
-		attrReaderWaitGroup  sync.WaitGroup
-		pathSortWaitGroup    sync.WaitGroup
-		hashPrinterWaitGroup sync.WaitGroup
+		fileWaitGroup   sync.WaitGroup
+		attrWaitGroup   sync.WaitGroup
+		sortWaitGroup   sync.WaitGroup
+		outputWaitGroup sync.WaitGroup
 	)
 
 	fileChan := make(chan *pathwalk.File, viper.GetInt("readahead"))
-	readAttrChan := make(chan *hasher.FileHash, defaultReadahead)
+	readAttrChan := make(chan *hasher.FileHash, defaultWriteahead)
 	sortChan := make(chan *hasher.FileHash, 1024)
 
 	h := hasher.New(viper.GetString("hash"), []byte(viper.GetString("hmac")))
-
 	a := hashattr.New(fmt.Sprintf("%s.%s", viper.GetString("attrPrefix"), h.Type))
 
-	for i := 0; i < viper.GetInt("parallel"); i++ {
-		attrReaderWaitGroup.Add(1)
-		go a.Reader(fileChan, readAttrChan, &attrReaderWaitGroup)
-	}
+	outputWaitGroup.Go(hasher.OutputTextFile(sortChan))
 
-	hashPrinterWaitGroup.Add(1)
-	go hasher.OutputTextFile(sortChan, &hashPrinterWaitGroup)
-
-	pathSortWaitGroup.Add(1)
 	if viper.GetBool("sort") {
-		go hasher.SortByPath(readAttrChan, sortChan, &pathSortWaitGroup)
+		sortWaitGroup.Go(hasher.SortByPath(readAttrChan, sortChan))
 	} else {
-		go hasher.SortByFifo(readAttrChan, sortChan, &pathSortWaitGroup)
+		sortWaitGroup.Go(hasher.SortByFifo(readAttrChan, sortChan))
 	}
 
-	for _, path := range pathsToWalk(args) {
-		walker := pathwalk.NewWalker(path, pathwalkOptions(), fileChan, &pathWalkWaitGroup)
-		pathWalkWaitGroup.Add(1)
-		go walker.Walk()
+	for range viper.GetInt("parallel") {
+		attrWaitGroup.Go(a.Reader(fileChan, readAttrChan))
 	}
 
-	pathWalkWaitGroup.Wait()
+	for _, path := range PathsToWalk(args) {
+		var walker pathwalk.PathWalker
+		if viper.GetBool("alt-walker") {
+			walker = pathwalk.NewAltWalker(path, PathwalkOptions(), fileChan)
+		} else {
+			walker = pathwalk.NewWalker(path, PathwalkOptions(), fileChan)
+		}
+		fileWaitGroup.Go(walker.Walk)
+	}
+
+	fileWaitGroup.Wait()
 	close(fileChan)
-	attrReaderWaitGroup.Wait()
+	attrWaitGroup.Wait()
 	close(readAttrChan)
-	pathSortWaitGroup.Wait()
+	sortWaitGroup.Wait()
 	close(sortChan)
-	hashPrinterWaitGroup.Wait()
+	outputWaitGroup.Wait()
 }

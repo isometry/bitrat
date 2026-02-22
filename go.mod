@@ -5,7 +5,6 @@ go 1.26
 require (
 	github.com/dchest/skein v0.0.0-20171112102903-d7f1022db390
 	github.com/klauspost/cpuid/v2 v2.3.0
-	github.com/minio/sha256-simd v1.0.1
 	github.com/pkg/xattr v0.4.12
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/viper v1.21.0

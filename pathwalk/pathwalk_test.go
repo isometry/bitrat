@@ -3,6 +3,7 @@ package pathwalk_test
 import (
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -11,16 +12,14 @@ import (
 	"github.com/isometry/bitrat/pathwalk"
 )
 
-func sinkFileChan(input <-chan *pathwalk.File, wg *sync.WaitGroup) {
-	defer wg.Done()
-
-	for range input {
+func sinkFileChan(input <-chan *pathwalk.File) func() {
+	return func() {
+		for range input {
+		}
 	}
 }
 
-func collectFiles(input <-chan *pathwalk.File, wg *sync.WaitGroup) []*pathwalk.File {
-	defer wg.Done()
-
+func collectFiles(input <-chan *pathwalk.File) []*pathwalk.File {
 	var files []*pathwalk.File
 	for file := range input {
 		files = append(files, file)
@@ -103,9 +102,8 @@ func TestNewWalker_ValidPattern(t *testing.T) {
 	}
 
 	fileChan := make(chan *pathwalk.File, 10)
-	var wg sync.WaitGroup
 
-	walker := pathwalk.NewWalker(tmpDir, opts, fileChan, &wg)
+	walker := pathwalk.NewWalker(tmpDir, opts, fileChan)
 	if walker == nil {
 		t.Fatal("NewWalker returned nil")
 	}
@@ -120,13 +118,12 @@ func TestNewWalker_InvalidPattern(t *testing.T) {
 	}
 
 	fileChan := make(chan *pathwalk.File, 10)
-	var wg sync.WaitGroup
 
 	// This should call os.Exit(1) due to invalid pattern
 	// We can't easily test this without changing the code
 	// For now, we'll test with a valid pattern instead
 	opts.Pattern = "*.txt"
-	walker := pathwalk.NewWalker(tmpDir, opts, fileChan, &wg)
+	walker := pathwalk.NewWalker(tmpDir, opts, fileChan)
 	if walker == nil {
 		t.Fatal("NewWalker returned nil")
 	}
@@ -136,9 +133,9 @@ func TestWalkers_BasicWalk(t *testing.T) {
 	tmpDir := createTestDir(t)
 
 	testCases := []struct {
-		name      string
-		useAlt    bool
-		parallel  int
+		name     string
+		useAlt   bool
+		parallel int
 	}{
 		{"Walker", false, 0},
 		{"AltWalker", true, 2},
@@ -157,20 +154,14 @@ func TestWalkers_BasicWalk(t *testing.T) {
 
 			var walker pathwalk.PathWalker
 			if tc.useAlt {
-				walker = pathwalk.NewAltWalker(tmpDir, opts, fileChan, &wg)
+				walker = pathwalk.NewAltWalker(tmpDir, opts, fileChan)
 			} else {
-				walker = pathwalk.NewWalker(tmpDir, opts, fileChan, &wg)
+				walker = pathwalk.NewWalker(tmpDir, opts, fileChan)
 			}
 
-			wg.Add(1)
-			collectWg.Add(1)
-
 			var files []*pathwalk.File
-			go func() {
-				files = collectFiles(fileChan, &collectWg)
-			}()
-
-			go walker.Walk()
+			collectWg.Go(func() { files = collectFiles(fileChan) })
+			wg.Go(walker.Walk)
 
 			wg.Wait()
 			close(fileChan)
@@ -200,9 +191,9 @@ func TestWalkers_RecursiveWalk(t *testing.T) {
 	tmpDir := createTestDir(t)
 
 	testCases := []struct {
-		name      string
-		useAlt    bool
-		parallel  int
+		name     string
+		useAlt   bool
+		parallel int
 	}{
 		{"Walker", false, 0},
 		{"AltWalker", true, 2},
@@ -221,20 +212,14 @@ func TestWalkers_RecursiveWalk(t *testing.T) {
 
 			var walker pathwalk.PathWalker
 			if tc.useAlt {
-				walker = pathwalk.NewAltWalker(tmpDir, opts, fileChan, &wg)
+				walker = pathwalk.NewAltWalker(tmpDir, opts, fileChan)
 			} else {
-				walker = pathwalk.NewWalker(tmpDir, opts, fileChan, &wg)
+				walker = pathwalk.NewWalker(tmpDir, opts, fileChan)
 			}
 
-			wg.Add(1)
-			collectWg.Add(1)
-
 			var files []*pathwalk.File
-			go func() {
-				files = collectFiles(fileChan, &collectWg)
-			}()
-
-			go walker.Walk()
+			collectWg.Go(func() { files = collectFiles(fileChan) })
+			wg.Go(walker.Walk)
 
 			wg.Wait()
 			close(fileChan)
@@ -272,30 +257,20 @@ func TestWalker_HiddenFiles(t *testing.T) {
 	var wg sync.WaitGroup
 	var collectWg sync.WaitGroup
 
-	walker := pathwalk.NewWalker(tmpDir, opts, fileChan, &wg)
-
-	wg.Add(1)
-	collectWg.Add(1)
+	walker := pathwalk.NewWalker(tmpDir, opts, fileChan)
 
 	var files []*pathwalk.File
-	go func() {
-		files = collectFiles(fileChan, &collectWg)
-	}()
-
-	go walker.Walk()
+	collectWg.Go(func() { files = collectFiles(fileChan) })
+	wg.Go(walker.Walk)
 
 	wg.Wait()
 	close(fileChan)
 	collectWg.Wait()
 
 	// Should include hidden files
-	foundHidden := false
-	for _, file := range files {
-		if strings.HasPrefix(filepath.Base(file.Path), ".") {
-			foundHidden = true
-			break
-		}
-	}
+	foundHidden := slices.ContainsFunc(files, func(f *pathwalk.File) bool {
+		return strings.HasPrefix(filepath.Base(f.Path), ".")
+	})
 
 	if !foundHidden {
 		t.Error("Expected to find hidden files when HiddenFiles=true")
@@ -314,30 +289,20 @@ func TestWalker_HiddenDirs(t *testing.T) {
 	var wg sync.WaitGroup
 	var collectWg sync.WaitGroup
 
-	walker := pathwalk.NewWalker(tmpDir, opts, fileChan, &wg)
-
-	wg.Add(1)
-	collectWg.Add(1)
+	walker := pathwalk.NewWalker(tmpDir, opts, fileChan)
 
 	var files []*pathwalk.File
-	go func() {
-		files = collectFiles(fileChan, &collectWg)
-	}()
-
-	go walker.Walk()
+	collectWg.Go(func() { files = collectFiles(fileChan) })
+	wg.Go(walker.Walk)
 
 	wg.Wait()
 	close(fileChan)
 	collectWg.Wait()
 
 	// Should include files from hidden directories
-	foundInHiddenDir := false
-	for _, file := range files {
-		if strings.Contains(file.Path, ".hidden_dir") {
-			foundInHiddenDir = true
-			break
-		}
-	}
+	foundInHiddenDir := slices.ContainsFunc(files, func(f *pathwalk.File) bool {
+		return strings.Contains(f.Path, ".hidden_dir")
+	})
 
 	if !foundInHiddenDir {
 		t.Error("Expected to find files in hidden directories when HiddenDirs=true")
@@ -367,29 +332,19 @@ func TestWalker_GitDirectory(t *testing.T) {
 			var wg sync.WaitGroup
 			var collectWg sync.WaitGroup
 
-			walker := pathwalk.NewWalker(tmpDir, opts, fileChan, &wg)
-
-			wg.Add(1)
-			collectWg.Add(1)
+			walker := pathwalk.NewWalker(tmpDir, opts, fileChan)
 
 			var files []*pathwalk.File
-			go func() {
-				files = collectFiles(fileChan, &collectWg)
-			}()
-
-			go walker.Walk()
+			collectWg.Go(func() { files = collectFiles(fileChan) })
+			wg.Go(walker.Walk)
 
 			wg.Wait()
 			close(fileChan)
 			collectWg.Wait()
 
-			foundGit := false
-			for _, file := range files {
-				if strings.Contains(file.Path, ".git") {
-					foundGit = true
-					break
-				}
-			}
+			foundGit := slices.ContainsFunc(files, func(f *pathwalk.File) bool {
+				return strings.Contains(f.Path, ".git")
+			})
 
 			if foundGit != tt.expectGit {
 				if tt.expectGit {
@@ -406,9 +361,9 @@ func TestWalkers_PatternMatching(t *testing.T) {
 	tmpDir := createTestDir(t)
 
 	walkerTests := []struct {
-		name      string
-		useAlt    bool
-		parallel  int
+		name     string
+		useAlt   bool
+		parallel int
 	}{
 		{"Walker", false, 0},
 		{"AltWalker", true, 2},
@@ -441,20 +396,14 @@ func TestWalkers_PatternMatching(t *testing.T) {
 
 					var walker pathwalk.PathWalker
 					if wt.useAlt {
-						walker = pathwalk.NewAltWalker(tmpDir, opts, fileChan, &wg)
+						walker = pathwalk.NewAltWalker(tmpDir, opts, fileChan)
 					} else {
-						walker = pathwalk.NewWalker(tmpDir, opts, fileChan, &wg)
+						walker = pathwalk.NewWalker(tmpDir, opts, fileChan)
 					}
 
-					wg.Add(1)
-					collectWg.Add(1)
-
 					var files []*pathwalk.File
-					go func() {
-						files = collectFiles(fileChan, &collectWg)
-					}()
-
-					go walker.Walk()
+					collectWg.Go(func() { files = collectFiles(fileChan) })
+					wg.Go(walker.Walk)
 
 					wg.Wait()
 					close(fileChan)
@@ -491,17 +440,11 @@ func TestWalker_FileAttributes(t *testing.T) {
 	var wg sync.WaitGroup
 	var collectWg sync.WaitGroup
 
-	walker := pathwalk.NewWalker(tmpDir, opts, fileChan, &wg)
-
-	wg.Add(1)
-	collectWg.Add(1)
+	walker := pathwalk.NewWalker(tmpDir, opts, fileChan)
 
 	var files []*pathwalk.File
-	go func() {
-		files = collectFiles(fileChan, &collectWg)
-	}()
-
-	go walker.Walk()
+	collectWg.Go(func() { files = collectFiles(fileChan) })
+	wg.Go(walker.Walk)
 
 	wg.Wait()
 	close(fileChan)
@@ -542,15 +485,12 @@ func TestNewAltWalker_ValidPattern(t *testing.T) {
 	}
 
 	fileChan := make(chan *pathwalk.File, 10)
-	var wg sync.WaitGroup
 
-	walker := pathwalk.NewAltWalker(tmpDir, opts, fileChan, &wg)
+	walker := pathwalk.NewAltWalker(tmpDir, opts, fileChan)
 	if walker == nil {
 		t.Fatal("NewAltWalker returned nil")
 	}
 }
-
-
 
 func TestAltWalker_ParallelBehavior(t *testing.T) {
 	tmpDir := createTestDir(t)
@@ -575,18 +515,13 @@ func TestAltWalker_ParallelBehavior(t *testing.T) {
 			var wg sync.WaitGroup
 			var collectWg sync.WaitGroup
 
-			walker := pathwalk.NewAltWalker(tmpDir, opts, fileChan, &wg)
-
-			wg.Add(1)
-			collectWg.Add(1)
+			walker := pathwalk.NewAltWalker(tmpDir, opts, fileChan)
 
 			var files []*pathwalk.File
-			go func() {
-				files = collectFiles(fileChan, &collectWg)
-			}()
+			collectWg.Go(func() { files = collectFiles(fileChan) })
 
 			start := time.Now()
-			go walker.Walk()
+			wg.Go(walker.Walk)
 
 			wg.Wait()
 			close(fileChan)
@@ -607,16 +542,14 @@ func TestAltWalker_ParallelBehavior(t *testing.T) {
 	}
 }
 
-
 func TestPathWalker_Interface(t *testing.T) {
 	tmpDir := createTestDir(t)
 	opts := &pathwalk.Options{Parallel: 1}
 	fileChan := make(chan *pathwalk.File, 10)
-	var wg sync.WaitGroup
 
 	// Test that both implementations satisfy the PathWalker interface
-	var walker1 pathwalk.PathWalker = pathwalk.NewWalker(tmpDir, opts, fileChan, &wg)
-	var walker2 pathwalk.PathWalker = pathwalk.NewAltWalker(tmpDir, opts, fileChan, &wg)
+	walker1 := pathwalk.NewWalker(tmpDir, opts, fileChan)
+	walker2 := pathwalk.NewAltWalker(tmpDir, opts, fileChan)
 
 	if walker1 == nil {
 		t.Error("Walker should implement PathWalker interface")
@@ -667,16 +600,13 @@ func benchmarkPathwalker(useAltWalker bool, options *pathwalk.Options) {
 	// Create appropriate walker type
 	var walker pathwalk.PathWalker
 	if useAltWalker {
-		walker = pathwalk.NewAltWalker("/usr/share", options, fileChan, &pathWalkWaitGroup)
+		walker = pathwalk.NewAltWalker("/usr/share", options, fileChan)
 	} else {
-		walker = pathwalk.NewWalker("/usr/share", options, fileChan, &pathWalkWaitGroup)
+		walker = pathwalk.NewWalker("/usr/share", options, fileChan)
 	}
 
-	pathWalkWaitGroup.Add(1)
-	go walker.Walk()
-
-	pathPrintWaitGroup.Add(1)
-	go sinkFileChan(fileChan, &pathPrintWaitGroup)
+	pathWalkWaitGroup.Go(walker.Walk)
+	pathPrintWaitGroup.Go(sinkFileChan(fileChan))
 
 	pathWalkWaitGroup.Wait()
 	close(fileChan)

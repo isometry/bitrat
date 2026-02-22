@@ -26,9 +26,7 @@ func sinkFileHashChan(input <-chan *hasher.FileHash) func() {
 	}
 }
 
-func collectFileHashChan(input <-chan *hasher.FileHash, wg *sync.WaitGroup) []*hasher.FileHash {
-	defer wg.Done()
-
+func collectFileHashChan(input <-chan *hasher.FileHash) []*hasher.FileHash {
 	var results []*hasher.FileHash
 	for item := range input {
 		results = append(results, item)
@@ -63,7 +61,7 @@ func TestSupportedAlgorithms_Coverage(t *testing.T) {
 		"blake3", "blake3-dk",
 		"crc32",
 		"md5",
-		"sha1", "sha224", "sha256", "sha256-simd", "sha384", "sha512",
+		"sha1", "sha224", "sha256", "sha384", "sha512",
 		"sha3-224", "sha3-256", "sha3-384", "sha3-512",
 		"skein-256", "skein-512",
 	}
@@ -271,11 +269,8 @@ func TestHasher_HashProcessor(t *testing.T) {
 	wg.Go(h.HashProcessor(input, output))
 
 	// Start collector
-	collectWg.Add(1)
 	var results []*hasher.FileHash
-	go func() {
-		results = collectFileHashChan(output, &collectWg)
-	}()
+	collectWg.Go(func() { results = collectFileHashChan(output) })
 
 	// Send test files
 	testFiles := []string{"test1.txt", "test2.txt", "empty.txt"}
@@ -329,11 +324,8 @@ func TestSortByFifo(t *testing.T) {
 	wg.Go(hasher.SortByFifo(input, output))
 
 	// Start collector
-	collectWg.Add(1)
 	var results []*hasher.FileHash
-	go func() {
-		results = collectFileHashChan(output, &collectWg)
-	}()
+	collectWg.Go(func() { results = collectFileHashChan(output) })
 
 	// Send data in specific order
 	for _, hash := range testHashes {
@@ -375,11 +367,8 @@ func TestSortByPath(t *testing.T) {
 	wg.Go(hasher.SortByPath(input, output))
 
 	// Start collector
-	collectWg.Add(1)
 	var results []*hasher.FileHash
-	go func() {
-		results = collectFileHashChan(output, &collectWg)
-	}()
+	collectWg.Go(func() { results = collectFileHashChan(output) })
 
 	// Send data in unsorted order
 	for _, hash := range testHashes {
@@ -596,8 +585,8 @@ func TestOutputProtobufFile(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.Remove(tmpFile.Name())
-	tmpFile.Close()
+	defer func() { _ = os.Remove(tmpFile.Name()) }()
+	_ = tmpFile.Close()
 
 	viper.Set("stats", true)
 	viper.Set("output-file", tmpFile.Name())
@@ -773,16 +762,15 @@ func benchmarkHasherPipeline(useAltWalker bool, options *pathwalk.Options) {
 	// Create appropriate walker type
 	var walker pathwalk.PathWalker
 	if useAltWalker {
-		walker = pathwalk.NewAltWalker(testPath, options, fileChan, &pathWalkWaitGroup)
+		walker = pathwalk.NewAltWalker(testPath, options, fileChan)
 	} else {
-		walker = pathwalk.NewWalker(testPath, options, fileChan, &pathWalkWaitGroup)
+		walker = pathwalk.NewWalker(testPath, options, fileChan)
 	}
 
-	pathWalkWaitGroup.Add(1)
-	go walker.Walk()
+	pathWalkWaitGroup.Go(walker.Walk)
 
 	// Start parallel hash processors
-	for i := 0; i < options.Parallel; i++ {
+	for range options.Parallel {
 		h := hasher.New(testHash, []byte(""))
 		hasherWaitGroup.Go(h.HashProcessor(fileChan, hashChan))
 	}

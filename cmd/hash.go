@@ -61,7 +61,7 @@ func hashWalk(cmd *cobra.Command, args []string) {
 		sortWaitGroup.Go(hasher.SortByFifo(hashChan, sortChan))
 	}
 
-	for i := 0; i < viper.GetInt("parallel"); i++ {
+	for range viper.GetInt("parallel") {
 		h := hasher.New(viper.GetString("hash"), []byte(viper.GetString("hmac")))
 		hashWaitGroup.Go(h.HashProcessor(fileChan, hashChan))
 	}
@@ -69,12 +69,11 @@ func hashWalk(cmd *cobra.Command, args []string) {
 	for _, path := range PathsToWalk(args) {
 		var walker pathwalk.PathWalker
 		if viper.GetBool("alt-walker") {
-			walker = pathwalk.NewAltWalker(path, PathwalkOptions(), fileChan, &fileWaitGroup)
+			walker = pathwalk.NewAltWalker(path, PathwalkOptions(), fileChan)
 		} else {
-			walker = pathwalk.NewWalker(path, PathwalkOptions(), fileChan, &fileWaitGroup)
+			walker = pathwalk.NewWalker(path, PathwalkOptions(), fileChan)
 		}
-		fileWaitGroup.Add(1)
-		go walker.Walk()
+		fileWaitGroup.Go(walker.Walk)
 	}
 
 	fileWaitGroup.Wait()

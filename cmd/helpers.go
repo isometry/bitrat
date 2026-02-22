@@ -3,7 +3,6 @@ package cmd
 import (
 	"crypto/hmac"
 	"fmt"
-	"sync"
 
 	"github.com/spf13/viper"
 
@@ -29,11 +28,12 @@ func PathsToWalk(paths []string) []string {
 	return paths
 }
 
-func HashConsumer(input <-chan *hasher.FileHash, wg *sync.WaitGroup) {
-	defer wg.Done()
-
-	for item := range input {
-		fmt.Printf("%x  %s\n", item.Hash, item.File.Path)
+// HashConsumer returns a func() that drains input, printing each hash in sha256sum-compatible format.
+func HashConsumer(input <-chan *hasher.FileHash) func() {
+	return func() {
+		for item := range input {
+			fmt.Printf("%x  %s\n", item.Hash, item.File.Path)
+		}
 	}
 }
 

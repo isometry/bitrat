@@ -1,7 +1,6 @@
 package hasher
 
 import (
-	"bytes"
 	"crypto/hmac"
 	"crypto/md5"
 	"crypto/sha1"
@@ -19,7 +18,6 @@ import (
 	"time"
 
 	"github.com/dchest/skein"
-	sha256simd "github.com/minio/sha256-simd"
 	"github.com/spf13/viper"
 	"github.com/zeebo/blake3"
 	"golang.org/x/crypto/blake2b"
@@ -84,7 +82,6 @@ var SupportedAlgorithms = map[string]algorithm{
 	"sha1":        sha1.New,
 	"sha224":      sha256.New224,
 	"sha256":      sha256.New,
-	"sha256-simd": sha256simd.New,
 	"sha384":      sha512.New384,
 	"sha512":      sha512.New,
 	"sha3-224":    sha3.New224,
@@ -119,7 +116,7 @@ func New(algo string, key []byte) Hasher {
 			}
 		// hashes without direct HMAC support
 		case func() hash.Hash:
-			if bytes.Equal(key, nil) {
+			if len(key) == 0 {
 				return Hasher{
 					Type: name,
 					Hash: hashFn(),
@@ -131,7 +128,7 @@ func New(algo string, key []byte) Hasher {
 			}
 		// support for hash.Hash32 hashes (i.e. CRC-32 and Adler-32)
 		case func() hash.Hash32:
-			if bytes.Equal(key, nil) {
+			if len(key) == 0 {
 				return Hasher{
 					Type: name,
 					Hash: hashFn(),
@@ -174,7 +171,7 @@ func (hasher *Hasher) HashFile(file *pathwalk.File) *FileHash {
 			Type: hasher.Type,
 		}
 	}
-	defer fd.Close()
+	defer func() { _ = fd.Close() }()
 
 	start := time.Now()
 	size, err := io.Copy(hasher.Hash, fd)
@@ -273,20 +270,26 @@ func OutputTextFile(input <-chan *FileHash) func() {
 			if err != nil {
 				log.Fatalf("error opening output file: %v\n", err)
 			}
+			defer func() {
+				if err := outputFile.Close(); err != nil {
+					log.Fatalf("error closing output file: %v\n", err)
+				}
+			}()
 		}
-		defer outputFile.Close()
 
 		for item := range input {
 			numFiles++
 			totalSize += item.File.Size
 			totalTime += item.File.ProcTime
-			fmt.Fprintln(outputFile, Sprintf(printFormat, item))
+			if _, err := fmt.Fprintln(outputFile, Sprintf(printFormat, item)); err != nil {
+				log.Fatalf("error writing output: %v\n", err)
+			}
 		}
 
 		if viper.GetBool("stats") {
 			elapsedTime := time.Since(startTime)
 			p := message.NewPrinter(language.English)
-			p.Fprintf(os.Stderr,
+			_, _ = p.Fprintf(os.Stderr,
 				"# %s hashed %v bytes from %v files in %s (%s cpu over %v routines) => %.1f MB/s\n",
 				viper.GetString("hash"),
 				totalSize,
@@ -320,8 +323,12 @@ func OutputProtobufFile(input <-chan *FileHash) func() {
 			if err != nil {
 				log.Fatalf("error opening output file: %v\n", err)
 			}
+			defer func() {
+				if err := outputFile.Close(); err != nil {
+					log.Fatalf("error closing output file: %v\n", err)
+				}
+			}()
 		}
-		defer outputFile.Close()
 
 		pathHashMap := make(map[string]*bitratpb.HashData)
 		recordSet := &bitratpb.RecordSet{
@@ -356,8 +363,9 @@ func OutputProtobufFile(input <-chan *FileHash) func() {
 		if err != nil {
 			log.Fatalln("Failed to encode result set:", err)
 		}
-		// TODO: catch errors here
-		outputFile.Write(out)
+		if _, err := outputFile.Write(out); err != nil {
+			log.Fatalf("error writing output: %v\n", err)
+		}
 	}
 }
 
